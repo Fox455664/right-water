@@ -10,7 +10,7 @@ import { motion } from 'framer-motion';
 import { updateProfile } from 'firebase/auth';
 
 const UserProfilePage = () => {
-  const { currentUser, updateUserPassword, reauthenticateUser } = useAuth();
+  const { currentUser, loading, updateUserPassword, reauthenticateUser } = useAuth();
   const { toast } = useToast();
 
   const [displayName, setDisplayName] = useState('');
@@ -103,7 +103,7 @@ const UserProfilePage = () => {
     }
   };
 
-  if (!currentUser) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
