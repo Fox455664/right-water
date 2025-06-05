@@ -1,9 +1,9 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 
-const ProtectedRoute = ({ adminOnly = false }) => {
+const ProtectedRoute = ({ children, adminOnly = false }) => {
   const { currentUser, loading } = useAuth();
 
   if (loading) {
@@ -15,23 +15,18 @@ const ProtectedRoute = ({ adminOnly = false }) => {
     );
   }
 
-  // المستخدم غير مسجل دخول
   if (!currentUser) {
     return <Navigate to="/login" replace />;
   }
 
-  // التحقق من صلاحية الأدمن (تحقق مبسط بالبريد)
   if (adminOnly) {
-    const email = currentUser.email?.toLowerCase();
-    const isAdmin = email === 'admin@rightwater.com' || email === 'testadmin@example.com';
-
+    const isAdmin = currentUser.email && (currentUser.email.toLowerCase() === 'admin@rightwater.com' || currentUser.email.toLowerCase() === 'testadmin@example.com');
     if (!isAdmin) {
-      return <Navigate to="/" replace />;
+      return <Navigate to="/" replace />; 
     }
   }
 
-  // السماح بالوصول
-  return <Outlet />;
+  return <>{children}</>;
 };
 
 export default ProtectedRoute;
