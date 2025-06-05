@@ -1,27 +1,58 @@
-
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { getAuth, GoogleAuthProvider, FacebookAuthProvider, TwitterAuthProvider } from "firebase/auth";
-import { getStorage } from "firebase/storage";
+import { getFirestore, collection, addDoc, Timestamp, doc, updateDoc, getDoc, onSnapshot, query, where, orderBy, deleteDoc, setDoc } from "firebase/firestore";
+import { getAuth, GoogleAuthProvider, FacebookAuthProvider, TwitterAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, updateProfile, signInWithPopup } from "firebase/auth";
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyA_bE6gzFdIFfKQySJQi7uudfgvaVBAlxI",
-  authDomain: "fox2-77fdd.firebaseapp.com",
-  projectId: "fox2-77fdd",
-  storageBucket: "fox2-77fdd.appspot.com",
-  messagingSenderId: "442481432364",
-  appId: "1:442481432364:web:eb72754872a4bd1eedbe89",
-  measurementId: "G-CYKGWRT6FT"
+  apiKey: "AIzaSyBVkdyjJi3l-QB1KpSQJle_P9ujHQ2LTn0",
+  authDomain: "right-water.firebaseapp.com",
+  projectId: "right-water",
+  storageBucket: "right-water.firebasestorage.app",
+  messagingSenderId: "134412024932",
+  appId: "1:134412024932:web:be47e36b50f087e2a87371",
+  measurementId: "G-0RZ3XYPXR7"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
+const analytics = getAnalytics(app);
 
 const googleProvider = new GoogleAuthProvider();
 const facebookProvider = new FacebookAuthProvider();
 const twitterProvider = new TwitterAuthProvider();
 
-
-export { db, auth, storage, googleProvider, facebookProvider, twitterProvider };
+export { 
+  db, 
+  auth, 
+  storage, 
+  analytics,
+  googleProvider, 
+  facebookProvider, 
+  twitterProvider,
+  collection,
+  addDoc,
+  Timestamp,
+  doc,
+  updateDoc,
+  getDoc,
+  onSnapshot,
+  query,
+  where,
+  orderBy,
+  deleteDoc,
+  setDoc,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
+  updateProfile,
+  signInWithPopup,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject
+};
