@@ -6,12 +6,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { motion } from 'framer-motion';
 
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/firebase"; // تأكد من مسار ملف إعداد Firebase
+
 const Navbar = () => {
   const { currentUser, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [cartItemCount, setCartItemCount] = useState(0);
 
+  const [cartItemCount, setCartItemCount] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // تحديث عدد عناصر السلة
   useEffect(() => {
     const updateCartCount = () => {
       const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
@@ -26,7 +32,27 @@ const Navbar = () => {
     };
   }, []);
 
+  // تحقق من صلاحية الأدمن من Firestore
+  useEffect(() => {
+    const checkAdminRole = async () => {
+      if (!currentUser) {
+        setIsAdmin(false);
+        return;
+      }
+      try {
+        const adminDocRef = doc(db, "admins", currentUser.uid);
+        const adminDocSnap = await getDoc(adminDocRef);
+        setIsAdmin(adminDocSnap.exists());
+      } catch (error) {
+        console.error("Failed to check admin role:", error);
+        setIsAdmin(false);
+      }
+    };
 
+    checkAdminRole();
+  }, [currentUser]);
+
+  // تسجيل الخروج
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -46,7 +72,7 @@ const Navbar = () => {
   };
 
   return (
-    <motion.nav 
+    <motion.nav
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
@@ -72,20 +98,22 @@ const Navbar = () => {
               )}
             </Button>
           </Link>
+
           {currentUser ? (
             <>
-              {currentUser.email && (currentUser.email.toLowerCase().includes('admin@rightwater.com') || currentUser.email.toLowerCase().includes('testadmin@example.com')) && (
-                 <Link to="/admin">
+              {isAdmin && (
+                <Link to="/admin">
                   <Button variant="ghost" className="text-white hover:bg-white/20 px-2 sm:px-3">
                     <ShieldCheck size={20} />
                     <span className="ml-1 hidden md:inline">التحكم</span>
                   </Button>
                 </Link>
               )}
+
               <Link to="/profile">
                 <Button variant="ghost" className="text-white hover:bg-white/20 px-2 sm:px-3">
-                    <User size={20} />
-                    <span className="ml-1 hidden md:inline">ملفي</span>
+                  <User size={20} />
+                  <span className="ml-1 hidden md:inline">ملفي</span>
                 </Button>
               </Link>
               <Button variant="ghost" onClick={handleSignOut} className="text-white hover:bg-white/20 px-2 sm:px-3">
