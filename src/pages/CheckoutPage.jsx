@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { db } from '@/firebase';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, Timestamp, doc, updateDoc, getDoc } from 'firebase/firestore';
 import emailjs from '@emailjs/browser';
 import { useCart } from '@/contexts/CartContext';
 import { Loader2, Lock, ArrowRight, Info, ShoppingBag } from 'lucide-react';
@@ -16,7 +16,7 @@ const CheckoutPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { cartItems: contextCartItems, clearCart } = useCart();
+  const { clearCart } = useCart(); 
 
   const [cartItems, setCartItems] = useState([]);
   const [total, setTotal] = useState(0);
@@ -36,37 +36,26 @@ const CheckoutPage = () => {
 
   useEffect(() => {
     setIsLoadingData(true);
-    let currentCartItems = [];
-    let currentTotal = 0;
-    let source = "unknown";
+    const source = location.state;
 
-    if (location.state && location.state.cartItems && typeof location.state.total === 'number') {
-      currentCartItems = location.state.cartItems;
-      currentTotal = location.state.total;
-      source = "location.state";
-    } else if (contextCartItems && contextCartItems.length > 0) {
-      currentCartItems = contextCartItems;
-      const subtotal = contextCartItems.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 0), 0);
-      const shipping = subtotal > 0 ? 50 : 0; 
-      currentTotal = subtotal + shipping;
-      source = "contextCartItems";
-    }
-    
-    setCartItems(currentCartItems);
-    setTotal(currentTotal);
-    setIsLoadingData(false);
-
-    if (currentCartItems.length === 0 && !isLoadingData) {
+    if (source && source.cartItems && Array.isArray(source.cartItems) && typeof source.total === 'number' && source.fromCart) {
+      setCartItems(source.cartItems);
+      setTotal(source.total);
+    } else {
+      setCartItems([]);
+      setTotal(0);
+      if (!source?.fromCart) { 
         toast({
             title: "سلة التسوق فارغة",
-            description: "يبدو أن سلتك فارغة. يتم توجيهك لصفحة المنتجات.",
+            description: "لم يتم العثور على منتجات في السلة. يتم توجيهك لصفحة المنتجات.",
             variant: "default",
-            duration: 4000,
+            duration: 3000,
         });
         setTimeout(() => navigate('/products'), 1500);
+      }
     }
-
-  }, [location.state, contextCartItems, navigate, toast, isLoadingData]);
+    setIsLoadingData(false);
+  }, [location.state, navigate, toast]);
 
 
   const handleChange = (e) => {
@@ -89,8 +78,16 @@ const CheckoutPage = () => {
 
     try {
       const orderData = {
-        ...formData,
-        cartItems: cartItems.map(item => ({ 
+        customerInfo: {
+          name: `${formData.firstName} ${formData.lastName}`,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city,
+          postalCode: formData.postalCode,
+          country: 'Egypt' 
+        },
+        items: cartItems.map(item => ({ 
           id: item.id, 
           name: item.name, 
           quantity: item.quantity, 
@@ -99,26 +96,46 @@ const CheckoutPage = () => {
         })),
         totalAmount: total,
         status: 'pending', 
+        paymentMethod: formData.paymentMethod,
         createdAt: Timestamp.now(),
       };
 
       const docRef = await addDoc(collection(db, 'orders'), orderData);
 
+      for (const item of cartItems) {
+        const productRef = doc(db, "products", item.id);
+        const productSnap = await getDoc(productRef);
+        if (productSnap.exists()) {
+          const currentStock = productSnap.data().stock;
+          const newStock = currentStock - item.quantity;
+          await updateDoc(productRef, { stock: newStock < 0 ? 0 : newStock });
+        }
+      }
+      
+      const orderItemsHtml = cartItems.map(item => 
+        `<div style="padding: 8px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+           <span style="flex-grow: 1;">${item.name} (الكمية: ${item.quantity})</span>
+           <span style="font-weight: bold;">${(item.price * item.quantity).toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}</span>
+         </div>`
+      ).join('');
+
       const emailParams = {
         to_name: `${formData.firstName} ${formData.lastName}`,
         to_email: formData.email,
         from_name: "متجر Right Water",
+        support_email: "support@rightwater.com", 
+        current_year: new Date().getFullYear(),
         order_id: docRef.id,
         order_total: total.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
-        order_address: `${formData.address}, ${formData.city}${formData.postalCode ? ', ' + formData.postalCode : ''}`,
-        order_items: cartItems.map(item => `${item.name} (x${item.quantity}) - ${(item.price * item.quantity).toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}`).join('\n'),
+        order_address: `${formData.address}, ${formData.city}${formData.postalCode ? ', ' + formData.postalCode : ''}, مصر`,
+        order_items_html: orderItemsHtml,
         customer_phone: formData.phone,
-        payment_method: "الدفع عند الاستلام",
+        payment_method: formData.paymentMethod === 'cod' ? "الدفع عند الاستلام" : formData.paymentMethod,
       };
       
       try {
-        await emailjs.send('service_pllfmfx', 'template_z9q8e8p', { ...emailParams, merchant_email: 'merchant@rightwater.com' }, 'xpSKf6d4h11LzEOLz');
         await emailjs.send('service_pllfmfx', 'template_client', emailParams, 'xpSKf6d4h11LzEOLz');
+        await emailjs.send('service_pllfmfx', 'template_z9q8e8p', { ...emailParams, merchant_email: 'merchant@rightwater.com' }, 'xpSKf6d4h11LzEOLz');
       } catch (emailError) {
         console.warn("EmailJS error: ", emailError);
         toast({
@@ -129,6 +146,8 @@ const CheckoutPage = () => {
         });
       }
       
+      clearCart(); 
+      
       toast({
         title: "🎉 تم إرسال طلبك بنجاح!",
         description: `شكراً لك ${formData.firstName}. رقم طلبك هو: ${docRef.id}`,
@@ -136,7 +155,6 @@ const CheckoutPage = () => {
         duration: 7000,
       });
 
-      clearCart();
       navigate('/order-success', { state: { orderId: docRef.id, customerName: formData.firstName, totalAmount: total } });
 
     } catch (error) {
@@ -166,7 +184,7 @@ const CheckoutPage = () => {
     );
   }
   
-  if (cartItems.length === 0 && !isLoadingData) {
+  if (cartItems.length === 0 && !isLoadingData) { 
      return (
         <div className="container mx-auto px-4 py-20 text-center">
             <motion.div
@@ -178,7 +196,7 @@ const CheckoutPage = () => {
                 <ShoppingBag className="mx-auto h-24 w-24 text-primary mb-6" />
                 <h1 className="text-3xl font-bold text-foreground mb-4">سلة التسوق الخاصة بك فارغة</h1>
                 <p className="text-muted-foreground mb-8">
-                يبدو أنك لم تختر أي كنوز مائية بعد. ابدأ رحلتك نحو مياه أنقى الآن!
+                لا يمكنك إتمام الدفع بسلة فارغة. نرجو إضافة منتجات أولاً.
                 </p>
                 <Button onClick={() => navigate('/products')} size="lg" className="bg-gradient-to-r from-primary to-secondary hover:opacity-90">
                     <ArrowRight className="mr-2 h-5 w-5" /> اكتشف منتجاتنا
