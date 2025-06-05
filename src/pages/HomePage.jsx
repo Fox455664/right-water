@@ -50,7 +50,7 @@ const HomePage = () => {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="text-5xl md:text-6xl font-extrabold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary"
           >
-            مياه نقية لحياة صحية مع رايت واتر
+            مياه نقية لحياة صحية مع رايت ووتر
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
@@ -125,7 +125,7 @@ const HomePage = () => {
         <div className="grid md:grid-cols-3 gap-8">
           <motion.div whileHover={{ y: -10 }} className="cursor-pointer">
             <Card className="overflow-hidden glassmorphism-card">
-              <img  alt="فلتر مياه منزلي" className="w-full h-56 object-cover" src="https://images.unsplash.com/photo-1660053094665-a21094758e8b" />
+              <img  alt="فلتر مياه منزلي" className="w-full h-56 object-cover" src="https://envs.sh/g9Z.jpg" />
               <CardHeader>
                 <CardTitle className="text-primary">فلتر مياه منزلي</CardTitle>
               </CardHeader>
