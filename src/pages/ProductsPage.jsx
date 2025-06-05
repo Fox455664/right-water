@@ -17,7 +17,7 @@ const initialProductsData = [
     price: 2850,
     originalPrice: 3200,
     description: 'فلتر مياه منزلي بـ 7 مراحل تنقية يوفر مياه شرب نقية وصحية لجميع أفراد الأسرة. سهل التركيب والصيانة.',
-    image: 'https://images.unsplash.com/photo-1587017098860-21f88e2912f3',
+    image: 'https://envs.sh/g9Z.jpg',
     stock: 15,
     rating: 4.8,
     reviews: 120,
