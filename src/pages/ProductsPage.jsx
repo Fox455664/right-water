@@ -1,108 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, Filter, Tag, AlertTriangle, Frown } from 'lucide-react';
+import { Search, Filter, Tag, AlertTriangle, Frown, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
-import ProductCard from '@/components/ProductCard'; // Import ProductCard
-
-const initialProductsData = [
-  {
-    id: 'prod_1',
-    name: 'فلتر مياه 7 مراحل متطور',
-    category: 'فلاتر منزلية',
-    price: 2850,
-    originalPrice: 3200,
-    description: 'فلتر مياه منزلي بـ 7 مراحل تنقية يوفر مياه شرب نقية وصحية لجميع أفراد الأسرة. سهل التركيب والصيانة.',
-    image: 'https://envs.sh/g9Z.jpg',
-    stock: 15,
-    rating: 4.8,
-    reviews: 120,
-  },
-  {
-    id: 'prod_2',
-    name: 'محطة تحلية مياه صغيرة',
-    category: 'محطات تحلية',
-    price: 15500,
-    description: 'محطة تحلية مياه مدمجة مثالية للمنازل والشركات الصغيرة، تضمن الحصول على مياه عذبة بجودة عالية.',
-    image: 'https://images.unsplash.com/photo-1605000000000-000000000002',
-    stock: 5,
-    rating: 4.9,
-    reviews: 45,
-  },
-  {
-    id: 'prod_3',
-    name: 'فلتر دش استحمام منقي',
-    category: 'فلاتر استحمام',
-    price: 350,
-    description: 'فلتر دش يزيل الكلور والشوائب من مياه الاستحمام، يحافظ على صحة البشرة والشعر.',
-    image: 'https://images.unsplash.com/photo-1605000000000-000000000003',
-    stock: 30,
-    rating: 4.5,
-    reviews: 210,
-  },
-  {
-    id: 'prod_4',
-    name: 'نظام معالجة مياه صناعي',
-    category: 'أنظمة صناعية',
-    price: 45000,
-    originalPrice: 50000,
-    description: 'نظام متكامل لمعالجة المياه للاستخدامات الصناعية، يتميز بالكفاءة العالية والقدرة الإنتاجية الكبيرة.',
-    image: 'https://images.unsplash.com/photo-1605000000000-000000000004',
-    stock: 3,
-    rating: 5.0,
-    reviews: 15,
-  },
-  {
-    id: 'prod_5',
-    name: 'شمعات فلتر بديلة (طقم 3)',
-    category: 'قطع غيار',
-    price: 250,
-    description: 'طقم شمعات فلتر بديلة عالية الجودة، متوافقة مع معظم فلاتر المياه المنزلية ذات الـ 3 مراحل.',
-    image: 'https://images.unsplash.com/photo-1605000000000-000000000005',
-    stock: 50,
-    rating: 4.7,
-    reviews: 88,
-  },
-  {
-    id: 'prod_6',
-    name: 'قارورة مياه ذكية مع فلتر',
-    category: 'فلاتر محمولة',
-    price: 480,
-    description: 'قارورة مياه مبتكرة مع فلتر مدمج، مثالية للتنقل والرياضة، تضمن مياه نقية في أي مكان.',
-    image: 'https://images.unsplash.com/photo-1605000000000-000000000006',
-    stock: 0, 
-    rating: 4.3,
-    reviews: 65,
-  },
-   {
-    id: 'prod_7',
-    name: 'فلتر مياه مركزي للمنزل',
-    category: 'فلاتر مركزية',
-    price: 7500,
-    description: 'فلتر مياه مركزي يتم تركيبه عند مدخل المياه الرئيسي للمنزل لتنقية جميع المياه المستخدمة.',
-    image: 'https://images.unsplash.com/photo-1605000000000-000000000007',
-    stock: 8,
-    rating: 4.9,
-    reviews: 32,
-  },
-  {
-    id: 'prod_8',
-    name: 'جهاز تعقيم مياه بالأشعة فوق البنفسجية',
-    category: 'أجهزة تعقيم',
-    price: 1200,
-    originalPrice: 1350,
-    description: 'جهاز تعقيم مياه فعال يستخدم تقنية الأشعة فوق البنفسجية للقضاء على البكتيريا والفيروسات.',
-    image: 'https://images.unsplash.com/photo-1605000000000-000000000008',
-    stock: 12,
-    rating: 4.6,
-    reviews: 50,
-  }
-];
-
+import ProductCard from '@/components/ProductCard'; // تأكد إن هذا المكون موجود
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/firebaseConfig'; // عدّل هذا المسار حسب مكان ملف firebaseConfig.js عندك
 
 const ProductsPage = () => {
   const [products, setProducts] = useState([]);
@@ -120,20 +25,29 @@ const ProductsPage = () => {
   }, [products]);
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-    setTimeout(() => {
-      if (initialProductsData && initialProductsData.length > 0) {
-        setProducts(initialProductsData);
-        setError(null);
-      } else {
-        setProducts([]);
-        setError("لا توجد منتجات متاحة حالياً. يرجى المحاولة مرة أخرى لاحقاً.");
+    const fetchProducts = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const productsCol = collection(db, 'products');
+        const productsSnapshot = await getDocs(productsCol);
+        const productsList = productsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        if (productsList.length === 0) {
+          setError("لا توجد منتجات متاحة حالياً. يرجى المحاولة مرة أخرى لاحقاً.");
+        }
+        setProducts(productsList);
+      } catch (err) {
+        setError("حدث خطأ أثناء جلب المنتجات.");
+        console.error("Firestore fetch error:", err);
       }
       setLoading(false);
-    }, 500);
-  }, []);
+    };
 
+    fetchProducts();
+  }, []);
 
   useEffect(() => {
     let tempProducts = [...products];
