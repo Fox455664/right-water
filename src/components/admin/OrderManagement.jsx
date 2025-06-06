@@ -3,8 +3,8 @@ import { db } from '@/firebase';
 import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Assuming Select component exists
-import { Eye, Edit, Trash2, PackageCheck, PackageX, Truck, Loader2, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Eye, Trash2, PackageCheck, PackageX, Truck, Loader2, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
 import {
@@ -17,18 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"; // Assuming AlertDialog component exists
-
-// You might need to create Select and AlertDialog components if they don't exist.
-// Example for Select: src/components/ui/select.jsx
-// Example for AlertDialog: src/components/ui/alert-dialog.jsx
-
-const initialOrders = [
-  { id: 'order123', customerName: 'أحمد محمود', date: '2025-05-28', total: 1550, status: 'pending', items: [{ name: 'فلتر مياه', quantity: 1 }, { name: 'فلتر دش', quantity: 1}] },
-  { id: 'order456', customerName: 'فاطمة علي', date: '2025-05-27', total: 4500, status: 'shipped', items: [{ name: 'محطة تحلية', quantity: 1 }] },
-  { id: 'order789', customerName: 'خالد حسين', date: '2025-05-26', total: 350, status: 'delivered', items: [{ name: 'فلتر دش', quantity: 1 }] },
-  { id: 'order101', customerName: 'سارة إبراهيم', date: '2025-05-25', total: 25000, status: 'cancelled', items: [{ name: 'نظام صناعي', quantity: 1 }] },
-];
+} from "@/components/ui/alert-dialog";
 
 const statusOptions = [
   { value: 'pending', label: 'قيد الانتظار', icon: <Loader2 className="h-4 w-4 text-yellow-500" /> },
@@ -49,7 +38,6 @@ const getStatusStyles = (status) => {
   }
 };
 
-
 const OrderManagement = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -63,20 +51,22 @@ const OrderManagement = () => {
       setLoading(true);
       setError(null);
       try {
-        // const ordersCollection = collection(db, 'orders');
-        // const orderSnapshot = await getDocs(ordersCollection);
-        // const orderList = orderSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        // For now, using initialOrders as Firebase 'orders' collection might not exist or be populated
-        // if (orderList.length > 0) {
-        //   setOrders(orderList);
-        // } else {
-          setOrders(initialOrders);
-          console.warn("Using initial placeholder data for orders. Firebase 'orders' collection might be empty or not found.");
-        // }
+        const ordersCollection = collection(db, 'orders');
+        const orderSnapshot = await getDocs(ordersCollection);
+        const orderList = orderSnapshot.docs.map(doc => {
+          const data = doc.data();
+          // If date is a Firebase Timestamp, convert to JS Date
+          const date = data.date?.seconds ? new Date(data.date.seconds * 1000) : new Date(data.date);
+          return {
+            id: doc.id,
+            ...data,
+            date,
+          };
+        });
+        setOrders(orderList);
       } catch (err) {
         console.error("Error fetching orders: ", err);
-        setError("حدث خطأ أثناء تحميل الطلبات. سنستخدم بيانات مبدئية.");
-        setOrders(initialOrders);
+        setError("حدث خطأ أثناء تحميل الطلبات.");
       } finally {
         setLoading(false);
       }
@@ -85,37 +75,50 @@ const OrderManagement = () => {
   }, []);
 
   const handleStatusChange = async (orderId, newStatus) => {
-    // In a real app, update Firebase
-    // const orderRef = doc(db, 'orders', orderId);
-    // await updateDoc(orderRef, { status: newStatus });
-    setOrders(prevOrders =>
-      prevOrders.map(order =>
-        order.id === orderId ? { ...order, status: newStatus } : order
-      )
-    );
-    toast({
-      title: "✅ تم تحديث حالة الطلب",
-      description: `تم تغيير حالة الطلب ${orderId} إلى ${statusOptions.find(s=>s.value === newStatus)?.label || newStatus}.`,
-      className: "bg-green-500 text-white"
-    });
+    try {
+      const orderRef = doc(db, 'orders', orderId);
+      await updateDoc(orderRef, { status: newStatus });
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === orderId ? { ...order, status: newStatus } : order
+        )
+      );
+      toast({
+        title: "✅ تم تحديث حالة الطلب",
+        description: `تم تغيير حالة الطلب ${orderId} إلى ${statusOptions.find(s => s.value === newStatus)?.label || newStatus}.`,
+        className: "bg-green-500 text-white"
+      });
+    } catch (error) {
+      toast({
+        title: "❌ فشل تحديث الحالة",
+        description: "حصل خطأ أثناء تحديث حالة الطلب. حاول مرة أخرى.",
+        className: "bg-red-500 text-white"
+      });
+    }
   };
 
   const handleDeleteOrder = async (orderId) => {
-    // In a real app, delete from Firebase
-    // await deleteDoc(doc(db, 'orders', orderId));
-    setOrders(prevOrders => prevOrders.filter(order => order.id !== orderId));
-    toast({
-      title: "🗑️ تم حذف الطلب",
-      description: `تم حذف الطلب ${orderId} بنجاح.`,
-      className: "bg-red-500 text-white"
-    });
+    try {
+      await deleteDoc(doc(db, 'orders', orderId));
+      setOrders(prevOrders => prevOrders.filter(order => order.id !== orderId));
+      toast({
+        title: "🗑️ تم حذف الطلب",
+        description: `تم حذف الطلب ${orderId} بنجاح.`,
+        className: "bg-red-500 text-white"
+      });
+    } catch (error) {
+      toast({
+        title: "❌ فشل حذف الطلب",
+        description: "حصل خطأ أثناء حذف الطلب. حاول مرة أخرى.",
+        className: "bg-red-500 text-white"
+      });
+    }
   };
 
   const handleViewOrder = (order) => {
     setSelectedOrder(order);
     setIsViewModalOpen(true);
   };
-
 
   if (loading) {
     return (
@@ -172,7 +175,7 @@ const OrderManagement = () => {
                   >
                     <TableCell className="font-medium text-primary">{order.id}</TableCell>
                     <TableCell>{order.customerName}</TableCell>
-                    <TableCell>{new Date(order.date).toLocaleDateString('ar-EG')}</TableCell>
+                    <TableCell>{order.date.toLocaleDateString('ar-EG')}</TableCell>
                     <TableCell>{order.total.toLocaleString('ar-EG')}</TableCell>
                     <TableCell>
                       <Select
@@ -201,9 +204,6 @@ const OrderManagement = () => {
                         <Button variant="ghost" size="icon" className="text-blue-500 hover:text-blue-700" onClick={() => handleViewOrder(order)}>
                           <Eye className="h-5 w-5" />
                         </Button>
-                        {/* <Button variant="ghost" size="icon" className="text-yellow-500 hover:text-yellow-700">
-                          <Edit className="h-5 w-5" />
-                        </Button> */}
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700">
@@ -232,40 +232,4 @@ const OrderManagement = () => {
               </AnimatePresence>
             </TableBody>
           </Table>
-        </div>
-      )}
-
-      {/* View Order Modal */}
-      {selectedOrder && (
-         <AlertDialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-            <AlertDialogContent className="max-w-lg text-right">
-                <AlertDialogHeader>
-                    <AlertDialogTitle className="text-2xl text-primary">تفاصيل الطلب: {selectedOrder.id}</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        <strong>اسم العميل:</strong> {selectedOrder.customerName}<br/>
-                        <strong>التاريخ:</strong> {new Date(selectedOrder.date).toLocaleDateString('ar-EG')}<br/>
-                        <strong>الإجمالي:</strong> {selectedOrder.total.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}<br/>
-                        <strong>الحالة:</strong> <span className={`px-2 py-1 rounded-md text-xs ${getStatusStyles(selectedOrder.status)}`}>
-                            {statusOptions.find(s => s.value === selectedOrder.status)?.label || selectedOrder.status}
-                        </span>
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <div className="my-4">
-                    <h4 className="font-semibold mb-2 text-foreground">المنتجات:</h4>
-                    <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                        {selectedOrder.items.map((item, index) => (
-                            <li key={index}>{item.name} (الكمية: {item.quantity})</li>
-                        ))}
-                    </ul>
-                </div>
-                <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setIsViewModalOpen(false)}>إغلاق</AlertDialogCancel>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-      )}
-    </motion.div>
-  );
-};
-
-export default OrderManagement;
+        </div
