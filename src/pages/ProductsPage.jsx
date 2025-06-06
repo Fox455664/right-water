@@ -7,7 +7,7 @@ import { Search, Filter, Tag, AlertTriangle, Frown, Loader2 } from 'lucide-react
 import { motion, AnimatePresence } from 'framer-motion';
 import ProductCard from '@/components/ProductCard'; // تأكد إن هذا المكون موجود
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/firebaseConfig'; // عدّل هذا المسار حسب مكان ملف firebaseConfig.js عندك
+import { db } from '@/firebase.js'; // عدّل هذا المسار حسب مكان ملف firebaseConfig.js عندك
 
 const ProductsPage = () => {
   const [products, setProducts] = useState([]);
