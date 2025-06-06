@@ -7,7 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { motion } from 'framer-motion';
 
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/firebase"; // تأكد من مسار ملف إعداد Firebase
+import { db } from "@/firebase";
 
 const Navbar = () => {
   const { currentUser, signOut } = useAuth();
@@ -17,22 +17,20 @@ const Navbar = () => {
   const [cartItemCount, setCartItemCount] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // تحديث عدد عناصر السلة
   useEffect(() => {
     const updateCartCount = () => {
       const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
       setCartItemCount(cartItems.reduce((total, item) => total + item.quantity, 0));
     };
 
-    updateCartCount(); // Initial count
-    window.addEventListener('cartUpdated', updateCartCount); // Listen for updates
+    updateCartCount();
+    window.addEventListener('cartUpdated', updateCartCount);
 
     return () => {
-      window.removeEventListener('cartUpdated', updateCartCount); // Cleanup
+      window.removeEventListener('cartUpdated', updateCartCount);
     };
   }, []);
 
-  // تحقق من صلاحية الأدمن من Firestore
   useEffect(() => {
     const checkAdminRole = async () => {
       if (!currentUser) {
@@ -52,7 +50,6 @@ const Navbar = () => {
     checkAdminRole();
   }, [currentUser]);
 
-  // تسجيل الخروج
   const handleSignOut = async () => {
     try {
       await signOut();
