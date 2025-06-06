@@ -232,4 +232,4 @@ const OrderManagement = () => {
               </AnimatePresence>
             </TableBody>
           </Table>
-        </div
+        </div>
