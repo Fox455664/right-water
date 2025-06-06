@@ -55,7 +55,6 @@ const OrderManagement = () => {
         const orderSnapshot = await getDocs(ordersCollection);
         const orderList = orderSnapshot.docs.map(doc => {
           const data = doc.data();
-          // If date is a Firebase Timestamp, convert to JS Date
           const date = data.date?.seconds ? new Date(data.date.seconds * 1000) : new Date(data.date);
           return {
             id: doc.id,
@@ -233,3 +232,9 @@ const OrderManagement = () => {
             </TableBody>
           </Table>
         </div>
+      )}
+    </motion.div>
+  );
+};
+
+export default OrderManagement;
