@@ -81,9 +81,9 @@ function App() {
                 path="admin" 
                 element={<ProtectedRoute adminOnly={true}><AdminLayout /></ProtectedRoute>}
               >
-                <Route index element={<OrderDetailsView />} />
-                <Route path="orders" element={<OrderDetailsView />} />
-                <Route path="orders/:orderId" element={<OrderManagement />} />
+                <Route index element={<OrderManagement />} />
+                <Route path="orders" element={<OrderManagement />} />
+                <Route path="orders/:orderId" element={<OrderDetailsView />} />
                 <Route path="products" element={<ProductManagement />} />
               </Route>
 
