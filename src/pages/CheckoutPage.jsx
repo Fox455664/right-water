@@ -122,8 +122,8 @@ const CheckoutPage = () => {
         payment_method: formData.paymentMethod === 'cod' ? "الدفع عند الاستلام" : formData.paymentMethod,
       };
 
-      await emailjs.send('service_pllfmfx', 'template_client', emailParams, 'xpSKf6d4h11LzEOLz');
-      await emailjs.send('service_pllfmfx', 'template_z9q8e8p', { ...emailParams, merchant_email: 'yalqlb019@gmail.com' }, 'xpSKf6d4h11LzEOLz');
+      await emailjs.send('service_pllfmfx', 'template_bu792mf', emailParams, 'xpSKf6d4h11LzEOLz');
+      await emailjs.send('service_pllfmfx', 'template_bu792mf', { ...emailParams, merchant_email: 'yalqlb019@gmail.com' }, 'xpSKf6d4h11LzEOLz');
 
       clearCart();
 
