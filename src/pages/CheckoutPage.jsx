@@ -132,10 +132,10 @@ const clientEmailParams = {
 // 2. إرسال إيميل للتاجر
 const merchantEmailParams = {
   ...baseEmailParams,
-  to_email: "rightwater156@gmail.com", // بريد التاجر
+  to_email: "rightwater156@gmail.com",       // ليوصل الإيميل للتاجر
+  client_email: formData.email,              // بريد العميل الحقيقي
   from_name: "Right Water - إشعار طلب جديد",
-  merchant_email: "rightwater156@gmail.com",
-  reply_to: formData.email, // 👈 هذا السطر يضبط خانة "Reply-To"
+  reply_to: formData.email                   // علشان لو ضغطت "رد"
 };
 
 try {
