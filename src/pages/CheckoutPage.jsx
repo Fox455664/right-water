@@ -108,10 +108,10 @@ const CheckoutPage = () => {
       };
 
       await emailjs.send(
-        "YOUR_SERVICE_ID",
-        "YOUR_TEMPLATE_ID",
+        "service_pllfmfx",
+        "template_bu792mf",
         emailParams,
-        "YOUR_PUBLIC_KEY"
+        "xpSKf6d4h11LzEOLz"
       );
 
       toast.success("تم إرسال الطلب بنجاح!");
