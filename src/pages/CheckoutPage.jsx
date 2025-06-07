@@ -19,7 +19,7 @@ import { toast } from "react-hot-toast";
 import { Loader2, Lock } from "lucide-react";
 
 const CheckoutPage = () => {
-  const { cartItems, clearCart } = useContext(CartContext);
+  const { cartItems, clearCart } = useContexts(CartContext);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
