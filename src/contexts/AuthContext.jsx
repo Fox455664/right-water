@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth } from '@/firebase';
 import { 
   onAuthStateChanged, 
   signOut as firebaseSignOut, 
@@ -8,6 +7,8 @@ import {
   reauthenticateWithCredential,
   EmailAuthProvider
 } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '@/firebase';
 import { Loader2 } from 'lucide-react';
 
 const AuthContext = createContext();
@@ -18,14 +19,29 @@ export function useAuth() {
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
+
+      if (user) {
+        try {
+          const adminDoc = await getDoc(doc(db, "admins", user.uid));
+          setIsAdmin(adminDoc.exists());
+        } catch (error) {
+          console.error("خطأ في التحقق من الصلاحيات:", error);
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+
       setLoading(false);
     });
-    return unsubscribe;
+
+    return () => unsubscribe();
   }, []);
 
   const signOut = () => {
@@ -38,25 +54,25 @@ export function AuthProvider({ children }) {
 
   const updateUserPassword = (newPassword) => {
     if (!currentUser) {
-      return Promise.reject(new Error("No user is currently signed in."));
+      return Promise.reject(new Error("لا يوجد مستخدم حالياً."));
     }
     return firebaseUpdatePassword(currentUser, newPassword);
   };
 
   const reauthenticateUser = (currentPassword) => {
     if (!currentUser) {
-      return Promise.reject(new Error("No user is currently signed in."));
+      return Promise.reject(new Error("لا يوجد مستخدم حالياً."));
     }
     const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
     return reauthenticateWithCredential(currentUser, credential);
   };
 
-
   const value = {
     currentUser,
+    isAdmin,
     loading,
     signOut,
-    sendPasswordReset, // Added this
+    sendPasswordReset,
     updateUserPassword,
     reauthenticateUser,
   };
