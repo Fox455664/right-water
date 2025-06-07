@@ -134,8 +134,8 @@ const merchantEmailParams = {
   ...baseEmailParams,
   to_email: "rightwater156@gmail.com", // بريد التاجر
   from_name: "Right Water - إشعار طلب جديد",
-  merchant_email: "rightwater156@gmail.com", // يمكن استخدامه في قالب التاجر إذا أردت
-  // في قالب التاجر ممكن تضيف Reply To بـ to_email للعميل (عادة يتم ضبطه داخل إعدادات القالب)
+  merchant_email: "rightwater156@gmail.com",
+  reply_to: formData.email, // 👈 هذا السطر يضبط خانة "Reply-To"
 };
 
 try {
