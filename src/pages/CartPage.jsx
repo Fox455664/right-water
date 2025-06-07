@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -28,7 +27,6 @@ const CartPage = () => {
       return;
     }
     
-    // Check if any item quantity exceeds stock
     const itemsExceedingStock = cartItems.filter(item => item.quantity > item.stock);
     if (itemsExceedingStock.length > 0) {
         toast({
@@ -39,8 +37,15 @@ const CartPage = () => {
         return;
     }
 
-
-    navigate('/checkout', { state: { cartItems, total: totalWithShipping } }); 
+    if (cartItems && typeof totalWithShipping === 'number') {
+      navigate('/checkout', { state: { cartItems: cartItems, total: totalWithShipping, fromCart: true } });
+    } else {
+      toast({
+        title: "خطأ في بيانات السلة",
+        description: "حدث خطأ أثناء تجهيز بيانات السلة. يرجى المحاولة مرة أخرى.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -171,7 +176,7 @@ const CartPage = () => {
                 </div>
               </CardContent>
               <CardFooter className="p-0 mt-8 flex flex-col space-y-3">
-                <Button onClick={handleCheckout} size="lg" className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity text-lg py-3" disabled={cartItems.some(item => item.quantity > item.stock || item.stock <= 0)}>
+                <Button onClick={handleCheckout} size="lg" className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity text-lg py-3" disabled={cartItems.some(item => item.quantity > item.stock || item.stock <= 0) || cartItems.length === 0}>
                   <CreditCard className="ml-2 h-5 w-5" /> المتابعة إلى الدفع
                 </Button>
                 {cartItems.some(item => item.quantity > item.stock || item.stock <= 0) && (
