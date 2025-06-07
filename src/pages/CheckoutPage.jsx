@@ -115,28 +115,31 @@ const CheckoutPage = () => {
       // افترض إن orderItems مصفوفة المنتجات اللي طلبها العميل
 // كل عنصر فيه: name (اسم المنتج)، quantity (الكمية)، price (السعر رقم)
 
-const orderItemsHtml = orderItems.map(item => `
-  <tr>
-    <td style="padding: 8px; border: 1px solid #ddd;">${item.name}</td>
-    <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${item.quantity}</td>
-    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${item.price.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}</td>
-  </tr>
-`).join('');
+const orderItemsHtml = cartItems.map(item => `
+      <tr>
+        <td style="padding: 8px; border: 1px solid #ddd;">${item.name}</td>
+        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${item.quantity}</td>
+        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${item.price.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}</td>
+      </tr>
+    `).join('');
 
-// تجهيز باقي بيانات البريد
-const emailParams = {
-  to_name: `${formData.firstName} ${formData.lastName}`,
-  to_email: formData.email,
-  from_name: "متجر Right Water",
-  support_email: "yalqlb019@gmail.com",
-  current_year: new Date().getFullYear(),
-  order_id: docRef.id,
-  order_total: total.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
-  order_address: `${formData.address}, ${formData.city}${formData.postalCode ? ', ' + formData.postalCode : ''}, مصر`,
-  order_items_html: orderItemsHtmlNew,  // HTML جاهز
-  customer_phone: formData.phone,
-  payment_method: formData.paymentMethod === 'cod' ? "الدفع عند الاستلام" : formData.paymentMethod,
-};
+    // إرسال البريد الإلكتروني للعميل
+    await emailjs.send(
+      "service_v7bjx7b",  // استبدل بالـ Service ID الخاص بك
+      "template_3bnjzm6", // استبدل بالـ Template ID الخاص بك
+      {
+        to_name: `${formData.firstName} ${formData.lastName}`,
+        to_email: formData.email,
+        from_name: "متجر Right Water",
+        support_email: "yalqlb019@gmail.com",
+        current_year: new Date().getFullYear(),
+        order_id: docRef.id,
+        order_total: total.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
+        order_address: `${formData.address}, ${formData.city}${formData.postalCode ? ', ' + formData.postalCode : ''}, مصر`,
+        order_items_html: orderItemsHtml,
+        customer_phone: formData.phone,
+        payment_method: formData.paymentMethod === 'cod' ? "الدفع عند الاستلام" : formData.paymentMethod,
+      },
 
 try {
   // إرسال البريد للعميل
