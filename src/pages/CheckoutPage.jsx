@@ -1,280 +1,181 @@
-import React, { useState, useContext } from "react";
+import React, { useState } from "react";
+import { useCart } from "@/context/CartContext";
+import { db } from "@/lib/firebase";
+import { addDoc, collection, updateDoc, doc, getDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
-import { CartContext } from "../contexts/CartContext";
-import { db } from "../firebase"; // تأكد من مسار إعداد Firebase عندك
-import { collection, addDoc, updateDoc, doc, getDoc } from "firebase/firestore";
-import emailjs from "@emailjs/browser";
+import emailjs from "emailjs-com";
+import { toast } from "@/components/ui/use-toast";
 import { motion } from "framer-motion";
 
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { toast } from "react-hot-toast";
-import { Loader2, Lock } from "lucide-react";
-
 const CheckoutPage = () => {
-  const { cartItems, clearCart } = useContext(CartContext);
+  const { cartItems, clearCart, updateStock } = useCart();
   const navigate = useNavigate();
-
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    email: "",
-    phone: "",
     address: "",
     city: "",
     postalCode: "",
+    phone: "",
+    email: "",
     paymentMethod: "cod",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const total = cartItems.reduce(
-    (acc, item) => acc + item.price * item.quantity,
-    0
-  );
+  const total = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
   const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setFormData((prevData) => ({ ...prevData, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (cartItems.length === 0) {
-      toast.error("سلة التسوق فارغة!");
+      toast({
+        title: "سلة التسوق فارغة",
+        description: "يرجى إضافة منتجات قبل إتمام الطلب.",
+        variant: "destructive",
+      });
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // تحقق من وجود المنتج وكميته في المخزون قبل الحفظ
+      // حفظ الطلب في Firestore
+      const docRef = await addDoc(collection(db, "orders"), {
+        ...formData,
+        cartItems,
+        total,
+        createdAt: new Date(),
+      });
+
+      // تحديث المخزون
       for (const item of cartItems) {
         const productRef = doc(db, "products", item.id);
         const productSnap = await getDoc(productRef);
 
-        if (!productSnap.exists()) {
-          toast.error(`المنتج "${item.name}" غير موجود.`);
-          setIsSubmitting(false);
-          return;
-        }
-
-        const productData = productSnap.data();
-        if (productData.stock < item.quantity) {
-          toast.error(`الكمية المطلوبة من "${item.name}" غير متوفرة.`);
-          setIsSubmitting(false);
-          return;
+        if (productSnap.exists()) {
+          const newStock = (productSnap.data().stock || 0) - item.quantity;
+          await updateDoc(productRef, { stock: Math.max(newStock, 0) });
+          updateStock(item.id, Math.max(newStock, 0));
         }
       }
 
-      // حفظ الطلب في Firestore
-      const orderData = {
-        customer: formData,
-        items: cartItems,
-        total,
-        status: "جديد",
-        createdAt: new Date(),
+      // HTML للمنتجات داخل الإيميل
+      const orderItemsHtml = cartItems.map(item => `
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;">${item.name}</td>
+          <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${item.quantity}</td>
+          <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${item.price.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}</td>
+        </tr>
+      `).join('');
+
+      const emailParams = {
+        to_name: `${formData.firstName} ${formData.lastName}`,
+        to_email: formData.email,
+        from_name: "متجر Right Water",
+        support_email: "yalqlb019@gmail.com",
+        current_year: new Date().getFullYear(),
+        order_id: docRef.id,
+        order_total: total.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
+        order_address: `${formData.address}, ${formData.city}${formData.postalCode ? ', ' + formData.postalCode : ''}, مصر`,
+        order_items_html: orderItemsHtml,
+        customer_phone: formData.phone,
+        payment_method: formData.paymentMethod === 'cod' ? "الدفع عند الاستلام" : formData.paymentMethod,
       };
 
-      const ordersCollection = collection(db, "orders");
-      const docRef = await addDoc(ordersCollection, orderData);
+      try {
+        // إرسال البريد للعميل
+        await emailjs.send(
+          'service_pllfmfx',
+          'template_client',
+          emailParams,
+          'xpSKf6d4h11LzEOLz'
+        );
 
-      // تحديث مخزون المنتجات
-      for (const item of cartItems) {
-        const productRef = doc(db, "products", item.id);
-        const productSnap = await getDoc(productRef);
-        const productData = productSnap.data();
+        // إرسال البريد للتاجر
+        await emailjs.send(
+          'service_pllfmfx',
+          'template_z9q8e8p',
+          { ...emailParams, merchant_email: 'yalqlb019@gmail.com' },
+          'xpSKf6d4h11LzEOLz'
+        );
 
-        await updateDoc(productRef, {
-          stock: productData.stock - item.quantity,
+        clearCart();
+
+        toast({
+          title: "🎉 تم إرسال طلبك بنجاح!",
+          description: `شكراً لك ${formData.firstName}. رقم طلبك هو: ${docRef.id}`,
+          className: "bg-green-500 text-white",
+          duration: 7000,
+        });
+
+        navigate("/order-success", {
+          state: {
+            orderId: docRef.id,
+            customerName: formData.firstName,
+            totalAmount: total,
+          },
+        });
+      } catch (emailError) {
+        console.warn("EmailJS Error:", emailError);
+        toast({
+          title: "تم تسجيل الطلب بنجاح",
+          description: "لكن واجهنا مشكلة في إرسال بريد التأكيد. سنتواصل معك لاحقاً.",
+          variant: "default",
+          duration: 5000,
+        });
+
+        navigate("/order-success", {
+          state: {
+            orderId: docRef.id,
+            customerName: formData.firstName,
+            totalAmount: total,
+          },
         });
       }
-
-      // إرسال إيميلات عبر EmailJS
-      const emailParams = {
-        to_email: formData.email,
-        to_name: `${formData.firstName} ${formData.lastName}`,
-        order_id: docRef.id,
-        total: total.toLocaleString("ar-EG", {
-          style: "currency",
-          currency: "EGP",
-        }),
-      };
-
-      await emailjs.send(
-        "service_pllfmfx",
-        "template_bu792mf",
-        emailParams,
-        "xpSKf6d4h11LzEOLz"
-      );
-
-      toast.success("تم إرسال الطلب بنجاح!");
-      clearCart();
-      navigate("/thank-you");
     } catch (error) {
-      console.error("حدث خطأ في عملية الدفع:", error);
-      toast.error("حدث خطأ أثناء معالجة طلبك، حاول مرة أخرى.");
+      console.error("Checkout Error:", error);
+      toast({
+        title: "حدث خطأ",
+        description: "تعذر إتمام الطلب. حاول لاحقاً.",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 flex items-center justify-center rtl">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="max-w-3xl w-full bg-card/70 p-8 rounded-xl shadow-xl glassmorphism-card"
-      >
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold mb-4 text-center">
-              إتمام عملية الدفع
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="firstName">الاسم الأول</Label>
-                  <Input
-                    id="firstName"
-                    name="firstName"
-                    type="text"
-                    required
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    placeholder="ادخل الاسم الأول"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="lastName">اسم العائلة</Label>
-                  <Input
-                    id="lastName"
-                    name="lastName"
-                    type="text"
-                    required
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    placeholder="ادخل اسم العائلة"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="email">البريد الإلكتروني</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="example@mail.com"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="phone">رقم الهاتف</Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  required
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="0123456789"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="address">العنوان</Label>
-                <Input
-                  id="address"
-                  name="address"
-                  type="text"
-                  required
-                  value={formData.address}
-                  onChange={handleChange}
-                  placeholder="شارع، عمارة، رقم"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="city">المدينة</Label>
-                  <Input
-                    id="city"
-                    name="city"
-                    type="text"
-                    required
-                    value={formData.city}
-                    onChange={handleChange}
-                    placeholder="القاهرة"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="postalCode">الرمز البريدي</Label>
-                  <Input
-                    id="postalCode"
-                    name="postalCode"
-                    type="text"
-                    value={formData.postalCode}
-                    onChange={handleChange}
-                    placeholder="12345"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="paymentMethod">طريقة الدفع</Label>
-                  <select
-                    id="paymentMethod"
-                    name="paymentMethod"
-                    value={formData.paymentMethod}
-                    onChange={handleChange}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
-                  >
-                    <option value="cod">الدفع عند الاستلام</option>
-                    <option value="credit_card">بطاقة ائتمان</option>
-                    <option value="paypal">باي بال</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="text-lg font-semibold text-right">
-                المجموع النهائي:{" "}
-                {total.toLocaleString("ar-EG", {
-                  style: "currency",
-                  currency: "EGP",
-                })}
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center gap-2"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="animate-spin h-5 w-5" /> جاري إرسال الطلب...
-                  </>
-                ) : (
-                  <>
-                    <Lock className="h-5 w-5" /> تأكيد الدفع
-                  </>
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </motion.div>
-    </div>
+    <motion.div 
+      className="p-4 max-w-2xl mx-auto text-right" 
+      initial={{ opacity: 0, y: 30 }} 
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <h1 className="text-2xl font-bold mb-4">إتمام الطلب</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <input type="text" name="firstName" placeholder="الاسم الأول" value={formData.firstName} onChange={handleChange} className="input" required />
+          <input type="text" name="lastName" placeholder="الاسم الأخير" value={formData.lastName} onChange={handleChange} className="input" required />
+        </div>
+        <input type="email" name="email" placeholder="البريد الإلكتروني" value={formData.email} onChange={handleChange} className="input w-full" required />
+        <input type="text" name="phone" placeholder="رقم الهاتف" value={formData.phone} onChange={handleChange} className="input w-full" required />
+        <input type="text" name="address" placeholder="العنوان" value={formData.address} onChange={handleChange} className="input w-full" required />
+        <div className="grid grid-cols-2 gap-4">
+          <input type="text" name="city" placeholder="المدينة" value={formData.city} onChange={handleChange} className="input" required />
+          <input type="text" name="postalCode" placeholder="الرمز البريدي (اختياري)" value={formData.postalCode} onChange={handleChange} className="input" />
+        </div>
+        <select name="paymentMethod" value={formData.paymentMethod} onChange={handleChange} className="input w-full" required>
+          <option value="cod">الدفع عند الاستلام</option>
+        </select>
+        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded w-full" disabled={isSubmitting}>
+          {isSubmitting ? "جارٍ معالجة الطلب..." : "تأكيد الطلب"}
+        </button>
+      </form>
+    </motion.div>
   );
 };
 
