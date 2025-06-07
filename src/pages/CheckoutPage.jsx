@@ -175,10 +175,97 @@ try {
     variant: "default",
     duration: 5000,
   });
-}
-      
-      clearCart(); 
-      
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (cartItems.length === 0) {
+    toast({
+      title: "السلة فارغة",
+      description: "لا يمكنك المتابعة والدفع بسلة فارغة. يرجى إضافة منتجات أولاً.",
+      variant: "destructive",
+    });
+    navigate('/products');
+    return;
+  }
+  setIsSubmitting(true);
+
+  try {
+    const orderData = {
+      customerInfo: {
+        name: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        postalCode: formData.postalCode,
+        country: 'Egypt'
+      },
+      items: cartItems.map(item => ({
+        id: item.id,
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        image: item.image || null
+      })),
+      totalAmount: total,
+      status: 'pending',
+      paymentMethod: formData.paymentMethod,
+      createdAt: Timestamp.now(),
+    };
+
+    // حفظ الطلب في Firestore
+    const docRef = await addDoc(collection(db, 'orders'), orderData);
+
+    // تحديث مخزون المنتجات
+    for (const item of cartItems) {
+      const productRef = doc(db, "products", item.id);
+      const productSnap = await getDoc(productRef);
+      if (productSnap.exists()) {
+        const currentStock = productSnap.data().stock;
+        const newStock = currentStock - item.quantity;
+        await updateDoc(productRef, { stock: newStock < 0 ? 0 : newStock });
+      }
+    }
+
+    // تجهيز جدول المنتجات كـ HTML
+    const orderItemsHtml = cartItems.map(item => `
+      <tr>
+        <td style="padding: 8px; border: 1px solid #ddd;">${item.name}</td>
+        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${item.quantity}</td>
+        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${item.price.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}</td>
+      </tr>
+    `).join('');
+
+    const emailParams = {
+      to_name: `${formData.firstName} ${formData.lastName}`,
+      to_email: formData.email,
+      from_name: "متجر Right Water",
+      support_email: "yalqlb019@gmail.com",
+      current_year: new Date().getFullYear(),
+      order_id: docRef.id,
+      order_total: total.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
+      order_address: `${formData.address}, ${formData.city}${formData.postalCode ? ', ' + formData.postalCode : ''}, مصر`,
+      order_items_html: orderItemsHtml,
+      customer_phone: formData.phone,
+      payment_method: formData.paymentMethod === 'cod' ? "الدفع عند الاستلام" : formData.paymentMethod,
+    };
+
+    try {
+      // إرسال البريد للعميل
+      await emailjs.send(
+        'service_v7bjx7b',
+        'template_3bnjzm6',
+        emailParams
+      );
+
+      // إرسال البريد للتاجر
+      await emailjs.send(
+        'service_v7bjx7b',
+        'template_merchant', // استبدل باسم التمبلت الخاص بالتاجر
+        { ...emailParams, merchant_email: 'yalqlb019@gmail.com' }
+      );
+
+      clearCart();
+
       toast({
         title: "🎉 تم إرسال طلبك بنجاح!",
         description: `شكراً لك ${formData.firstName}. رقم طلبك هو: ${docRef.id}`,
@@ -188,17 +275,29 @@ try {
 
       navigate('/order-success', { state: { orderId: docRef.id, customerName: formData.firstName, totalAmount: total } });
 
-    } catch (error) {
-      console.error("Error placing order: ", error);
+    } catch (emailError) {
+      console.warn("EmailJS error: ", emailError);
       toast({
-        title: "حدث خطأ",
-        description: "لم نتمكن من إتمام طلبك. يرجى المحاولة مرة أخرى أو الاتصال بالدعم.",
-        variant: "destructive",
+        title: "خطأ في إرسال البريد",
+        description: "تم تسجيل طلبك بنجاح، ولكن حدث خطأ أثناء إرسال بريد التأكيد. سنتواصل معك قريباً.",
+        variant: "default",
+        duration: 5000,
       });
-    } finally {
-      setIsSubmitting(false);
+      clearCart();
+      navigate('/order-success', { state: { orderId: docRef.id, customerName: formData.firstName, totalAmount: total } });
     }
-  };
+
+  } catch (error) {
+    console.error("Error placing order: ", error);
+    toast({
+      title: "حدث خطأ",
+      description: "لم نتمكن من إتمام طلبك. يرجى المحاولة مرة أخرى أو الاتصال بالدعم.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
   
   const shippingCost = cartItems.length > 0 ? 50 : 0;
   const subTotalForDisplay = cartItems.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 0), 0);
