@@ -101,31 +101,54 @@ const CheckoutPage = () => {
       }
 
       const orderItemsHtml = cartItems.map(item => `
-        <tr>
-          <td style="padding:8px; border:1px solid #ddd;">${item.name}</td>
-          <td style="padding:8px; border:1px solid #ddd; text-align:center;">${item.quantity}</td>
-          <td style="padding:8px; border:1px solid #ddd; text-align:right;">${item.price.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}</td>
-        </tr>
-      `).join('');
+  <tr>
+    <td style="padding:8px; border:1px solid #ddd;">${item.name}</td>
+    <td style="padding:8px; border:1px solid #ddd; text-align:center;">${item.quantity}</td>
+    <td style="padding:8px; border:1px solid #ddd; text-align:right;">
+      ${item.price.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}
+    </td>
+  </tr>
+`).join('');
 
-      const emailParams = {
-        to_name: `${formData.firstName} ${formData.lastName}`,
-        to_email: formData.email,
-        from_name: "متجر Right Water",
-        support_email: "yalqlb019@gmail.com",
-        current_year: new Date().getFullYear(),
-        order_id: docRef.id,
-        order_total: total.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
-        order_address: `${formData.address}, ${formData.city}${formData.postalCode ? ', ' + formData.postalCode : ''}, مصر`,
-        order_items_html: orderItemsHtml,
-        customer_phone: formData.phone,
-        payment_method: formData.paymentMethod === 'cod' ? "الدفع عند الاستلام" : formData.paymentMethod,
-      };
+const baseEmailParams = {
+  to_name: `${formData.firstName} ${formData.lastName}`,
+  to_email: formData.email,
+  order_id: docRef.id,
+  order_total: total.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
+  order_address: `${formData.address}, ${formData.city}${formData.postalCode ? ', ' + formData.postalCode : ''}, مصر`,
+  order_items_html: orderItemsHtml,
+  customer_phone: formData.phone,
+  payment_method: formData.paymentMethod === 'cod' ? "الدفع عند الاستلام" : formData.paymentMethod,
+};
 
-      await emailjs.send('service_pllfmfx', 'template_bu792mf', emailParams, 'xpSKf6d4h11LzEOLz');
-      await emailjs.send('service_pllfmfx', 'template_bu792mf', { ...emailParams, merchant_email: 'yalqlb019@gmail.com' }, 'xpSKf6d4h11LzEOLz');
+// 1. إرسال إيميل للعميل
+const clientEmailParams = {
+  ...baseEmailParams,
+  from_name: "متجر Right Water",
+  support_email: "rightwater156@gmail.com",  // بريد الدعم أو ثابت
+  // to_email و to_name موجودين في baseEmailParams
+};
 
-      clearCart();
+// 2. إرسال إيميل للتاجر
+const merchantEmailParams = {
+  ...baseEmailParams,
+  to_email: "rightwater156@gmail.com", // بريد التاجر
+  from_name: "Right Water - إشعار طلب جديد",
+  merchant_email: "rightwater156@gmail.com", // يمكن استخدامه في قالب التاجر إذا أردت
+  // في قالب التاجر ممكن تضيف Reply To بـ to_email للعميل (عادة يتم ضبطه داخل إعدادات القالب)
+};
+
+try {
+  // إرسال إيميل العميل باستخدام قالب مخصص (مثلاً template_client)
+  await emailjs.send('service_0p2k5ih', 'template_bu792mf', clientEmailParams, 'xpSKf6d4h11LzEOLz');
+  
+  // إرسال إيميل التاجر باستخدام قالب مختلف (مثلاً template_merchant)
+  await emailjs.send('service_0p2k5ih', 'template_tboeo2t', merchantEmailParams, 'xpSKf6d4h11LzEOLz');
+
+  clearCart();
+} catch (error) {
+  console.error("حدث خطأ أثناء إرسال البريد الإلكتروني:", error);
+}
 
       toast({
         title: "🎉 تم إرسال طلبك بنجاح!",
