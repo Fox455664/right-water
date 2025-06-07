@@ -1,3 +1,4 @@
+// Navbar.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,16 +7,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { motion } from 'framer-motion';
 
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/firebase";
-
 const Navbar = () => {
-  const { currentUser, signOut } = useAuth();
+  const { currentUser, isAdmin, signOut } = useAuth(); // لاحظ isAdmin يأتي من AuthContext
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const [cartItemCount, setCartItemCount] = useState(0);
-  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const updateCartCount = () => {
@@ -25,30 +22,8 @@ const Navbar = () => {
 
     updateCartCount();
     window.addEventListener('cartUpdated', updateCartCount);
-
-    return () => {
-      window.removeEventListener('cartUpdated', updateCartCount);
-    };
+    return () => window.removeEventListener('cartUpdated', updateCartCount);
   }, []);
-
-  useEffect(() => {
-    const checkAdminRole = async () => {
-      if (!currentUser) {
-        setIsAdmin(false);
-        return;
-      }
-      try {
-        const adminDocRef = doc(db, "admins", currentUser.uid);
-        const adminDocSnap = await getDoc(adminDocRef);
-        setIsAdmin(adminDocSnap.exists());
-      } catch (error) {
-        console.error("Failed to check admin role:", error);
-        setIsAdmin(false);
-      }
-    };
-
-    checkAdminRole();
-  }, [currentUser]);
 
   const handleSignOut = async () => {
     try {
@@ -76,21 +51,21 @@ const Navbar = () => {
       className="bg-gradient-to-r from-water-blue to-water-green/80 shadow-lg sticky top-0 z-50 py-3 px-4 md:px-8"
     >
       <div className="container mx-auto flex items-center justify-between">
-        <Link to="/" className="flex items-center space-x-2 text-white hover:opacity-90 transition-opacity">
+        <Link to="/" className="flex items-center space-x-2 text-white hover:opacity-90 transition-opacity" aria-label="الصفحة الرئيسية">
           <Droplets size={36} className="text-white" />
           <h1 className="text-2xl font-bold tracking-tight">رايت واتر</h1>
         </Link>
         <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4">
           <Link to="/products">
-            <Button variant="ghost" className="text-white hover:bg-white/20 px-2 sm:px-3">المنتجات</Button>
+            <Button aria-label="المنتجات" variant="ghost" className="text-white hover:bg-white/20 px-2 sm:px-3">المنتجات</Button>
           </Link>
           <Link to="/cart">
-            <Button variant="ghost" className="text-white hover:bg-white/20 relative px-2 sm:px-3">
+            <Button aria-label="السلة" variant="ghost" className="text-white hover:bg-white/20 relative px-2 sm:px-3">
               <ShoppingCart size={20} />
               <span className="ml-1 hidden md:inline">السلة</span>
               {cartItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                  {cartItemCount}
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full min-h-4 min-w-4 px-[4px] flex items-center justify-center">
+                  {cartItemCount > 99 ? '99+' : cartItemCount}
                 </span>
               )}
             </Button>
@@ -100,7 +75,7 @@ const Navbar = () => {
             <>
               {isAdmin && (
                 <Link to="/admin">
-                  <Button variant="ghost" className="text-white hover:bg-white/20 px-2 sm:px-3">
+                  <Button aria-label="لوحة التحكم" variant="ghost" className="text-white hover:bg-white/20 px-2 sm:px-3">
                     <ShieldCheck size={20} />
                     <span className="ml-1 hidden md:inline">التحكم</span>
                   </Button>
@@ -108,19 +83,19 @@ const Navbar = () => {
               )}
 
               <Link to="/profile">
-                <Button variant="ghost" className="text-white hover:bg-white/20 px-2 sm:px-3">
+                <Button aria-label="الملف الشخصي" variant="ghost" className="text-white hover:bg-white/20 px-2 sm:px-3">
                   <User size={20} />
                   <span className="ml-1 hidden md:inline">ملفي</span>
                 </Button>
               </Link>
-              <Button variant="ghost" onClick={handleSignOut} className="text-white hover:bg-white/20 px-2 sm:px-3">
+              <Button aria-label="تسجيل الخروج" variant="ghost" onClick={handleSignOut} className="text-white hover:bg-white/20 px-2 sm:px-3">
                 <LogOut size={20} />
                 <span className="ml-1 hidden md:inline">خروج</span>
               </Button>
             </>
           ) : (
             <Link to="/login">
-              <Button variant="outline" className="text-white border-white hover:bg-white hover:text-primary px-2 sm:px-3">
+              <Button aria-label="تسجيل الدخول" variant="outline" className="text-white border-white hover:bg-white hover:text-primary px-2 sm:px-3">
                 <LogIn size={20} />
                 <span className="ml-1">دخول</span>
               </Button>
