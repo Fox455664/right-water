@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { useCart } from "@/context/CartContext";
+import { useCart } from "@/contexts/CartContext";
 import { db } from "@/lib/firebase";
 import { addDoc, collection, updateDoc, doc, getDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
-import emailjs from "emailjs-com";
+import emailjs from '@emailjs/browser';
 import { toast } from "@/components/ui/use-toast";
 import { motion } from "framer-motion";
 
