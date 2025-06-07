@@ -119,16 +119,28 @@ const CheckoutPage = () => {
          </div>`
       ).join('');
 
-      const emailParams = {
+      // افترض إن orderItems مصفوفة المنتجات اللي طلبها العميل
+// كل عنصر فيه: name (اسم المنتج)، quantity (الكمية)، price (السعر رقم)
+
+const orderItemsHtml = orderItems.map(item => `
+  <tr>
+    <td style="padding: 8px; border: 1px solid #ddd;">${item.name}</td>
+    <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${item.quantity}</td>
+    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${item.price.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}</td>
+  </tr>
+`).join('');
+
+// تجهيز باقي بيانات البريد
+const emailParams = {
   to_name: `${formData.firstName} ${formData.lastName}`,
-  to_email: formData.email,  // مهم جدًا لتحديد مستلم البريد
+  to_email: formData.email,
   from_name: "متجر Right Water",
-  support_email: "yalqlb019@gmail.com", 
+  support_email: "yalqlb019@gmail.com",
   current_year: new Date().getFullYear(),
   order_id: docRef.id,
   order_total: total.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
   order_address: `${formData.address}, ${formData.city}${formData.postalCode ? ', ' + formData.postalCode : ''}, مصر`,
-  order_items_html: orderItemsHtml,
+  order_items_html: orderItemsHtml,  // HTML جاهز
   customer_phone: formData.phone,
   payment_method: formData.paymentMethod === 'cod' ? "الدفع عند الاستلام" : formData.paymentMethod,
 };
@@ -137,18 +149,28 @@ try {
   // إرسال البريد للعميل
   await emailjs.send(
     'service_pllfmfx',
-    'template_client', // قالب العميل
+    'template_client',
     emailParams,
     'xpSKf6d4h11LzEOLz'
   );
 
-  // إرسال البريد للتاجر (مع إضافة بريد التاجر)
+  // إرسال البريد للتاجر
   await emailjs.send(
     'service_pllfmfx',
-    'template_z9q8e8p', // قالب التاجر
+    'template_z9q8e8p',
     { ...emailParams, merchant_email: 'yalqlb019@gmail.com' },
     'xpSKf6d4h11LzEOLz'
   );
+
+  clearCart();
+
+  toast({
+    title: "🎉 تم إرسال طلبك بنجاح!",
+    description: `شكراً لك ${formData.firstName}. رقم طلبك هو: ${docRef.id}`,
+    className: "bg-green-500 text-white",
+    duration: 7000,
+  });
+
 } catch (emailError) {
   console.warn("EmailJS error: ", emailError);
   toast({
@@ -158,16 +180,6 @@ try {
     duration: 5000,
   });
 }
-
-clearCart();
-
-toast({
-  title: "🎉 تم إرسال طلبك بنجاح!",
-  description: `شكراً لك ${formData.firstName}. رقم طلبك هو: ${docRef.id}`,
-  className: "bg-green-500 text-white",
-  duration: 7000,
-});
-
       navigate('/order-success', { state: { orderId: docRef.id, customerName: formData.firstName, totalAmount: total } });
 
     } catch (error) {
