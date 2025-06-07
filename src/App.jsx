@@ -4,7 +4,6 @@ import Layout from '@/components/Layout';
 import HomePage from '@/pages/HomePage';
 import LoginPage from '@/pages/LoginPage';
 import SignupPage from '@/pages/SignupPage';
-import AdminDashboardPage from '@/pages/AdminDashboardPage';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { CartProvider } from '@/contexts/CartContext';
@@ -17,12 +16,16 @@ import ContactPage from '@/pages/ContactPage';
 import CartPage from '@/pages/CartPage';
 import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
 import UserProfilePage from '@/pages/UserProfilePage';
-import CheckoutPage from '@/pages/CheckoutPage'; 
+import CheckoutPage from '@/pages/CheckoutPage';
 import OrderSuccessPage from '@/pages/OrderSuccessPage';
+
+import AdminDashboardPage from '@/pages/AdminDashboardPage';
 import OrderManagement from '@/components/admin/OrderManagement';
 import OrderDetailsView from '@/components/admin/OrderDetailsView';
 import ProductManagement from '@/components/admin/ProductManagement';
-import AdminLayout from '@/components/admin/AdminLayout';
+import AdminSettings from '@/components/admin/AdminSettings'; // صفحة اختيارية
+
+import { Outlet } from 'react-router-dom';
 
 const ProductDetailsPage = () => (
   <div className="text-center p-10">
@@ -76,15 +79,20 @@ function App() {
               <Route path="about" element={<AnimatedPage><AboutPage /></AnimatedPage>} />
               <Route path="contact" element={<AnimatedPage><ContactPage /></AnimatedPage>} />
 
-              {/* لوحة تحكم المسؤول */}
+              {/* لوحة تحكم المسؤول مع المسارات الفرعية داخل AdminDashboardPage */}
               <Route 
                 path="admin" 
-                element={<ProtectedRoute adminOnly={true}><AdminLayout /></ProtectedRoute>}
+                element={
+                  <ProtectedRoute adminOnly={true}>
+                    <AdminDashboardPage />
+                  </ProtectedRoute>
+                }
               >
                 <Route index element={<OrderManagement />} />
                 <Route path="orders" element={<OrderManagement />} />
                 <Route path="orders/:orderId" element={<OrderDetailsView />} />
                 <Route path="products" element={<ProductManagement />} />
+                <Route path="settings" element={<AdminSettings />} />
               </Route>
 
               <Route path="*" element={<AnimatedPage><NotFoundPage /></AnimatedPage>} />
