@@ -64,139 +64,118 @@ const CheckoutPage = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (cartItems.length === 0) {
-      toast({
-        title: "السلة فارغة",
-        description: "لا يمكنك المتابعة والدفع بسلة فارغة. يرجى إضافة منتجات أولاً.",
-        variant: "destructive",
-      });
-      navigate('/products');
-      return;
-    }
-    setIsSubmitting(true);
+  e.preventDefault();
 
-    try {
-      const orderData = {
-        customerInfo: {
-          name: `${formData.firstName} ${formData.lastName}`,
-          email: formData.email,
-          phone: formData.phone,
-          address: formData.address,
-          city: formData.city,
-          postalCode: formData.postalCode,
-          country: 'Egypt' 
-        },
-        items: cartItems.map(item => ({ 
-          id: item.id, 
-          name: item.name, 
-          quantity: item.quantity, 
-          price: item.price,
-          image: item.image || null 
-        })),
-        totalAmount: total,
-        status: 'pending', 
-        paymentMethod: formData.paymentMethod,
-        createdAt: Timestamp.now(),
-      };
+  if (cartItems.length === 0) {
+    toast({
+      title: "السلة فارغة",
+      description: "لا يمكنك المتابعة والدفع بسلة فارغة. يرجى إضافة منتجات أولاً.",
+      variant: "destructive",
+    });
+    navigate('/products');
+    return;
+  }
 
-      const docRef = await addDoc(collection(db, 'orders'), orderData);
-
-      for (const item of cartItems) {
-        const productRef = doc(db, "products", item.id);
-        const productSnap = await getDoc(productRef);
-        if (productSnap.exists()) {
-          const currentStock = productSnap.data().stock;
-          const newStock = currentStock - item.quantity;
-          await updateDoc(productRef, { stock: newStock < 0 ? 0 : newStock });
-        }
-      }
-      
-      const orderItemsHtml = cartItems.map(item => 
-        `<div style="padding: 8px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
-           <span style="flex-grow: 1;">${item.name} (الكمية: ${item.quantity})</span>
-           <span style="font-weight: bold;">${(item.price * item.quantity).toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}</span>
-         </div>`
-      ).join('');
-
-      // افترض إن orderItems مصفوفة المنتجات اللي طلبها العميل
-// كل عنصر فيه: name (اسم المنتج)، quantity (الكمية)، price (السعر رقم)
-
-const orderItemsHtmlForEmail = orderItems.map(item => `
-  <tr>
-    <td style="padding: 8px; border: 1px solid #ddd;">${item.name}</td>
-    <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${item.quantity}</td>
-    <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${item.price.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}</td>
-  </tr>
-`).join('');
-
-// تجهيز باقي بيانات البريد
-const emailParams = {
-  to_name: `${formData.firstName} ${formData.lastName}`,
-  to_email: formData.email,
-  from_name: "متجر Right Water",
-  support_email: "yalqlb019@gmail.com",
-  current_year: new Date().getFullYear(),
-  order_id: docRef.id,
-  order_total: total.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
-  order_address: `${formData.address}, ${formData.city}${formData.postalCode ? ', ' + formData.postalCode : ''}, مصر`,
-  order_items_html: orderItemsHtmlForEmail,  // HTML جاهز
-  customer_phone: formData.phone,
-  payment_method: formData.paymentMethod === 'cod' ? "الدفع عند الاستلام" : formData.paymentMethod,
-};
-
-try {
-  // إرسال البريد للعميل
-  await emailjs.send(
-    'service_pllfmfx',
-    'template_client',
-    emailParams,
-    'xpSKf6d4h11LzEOLz'
-  );
-
-  // إرسال البريد للتاجر
-  await emailjs.send(
-    'service_pllfmfx',
-    'template_z9q8e8p',
-    { ...emailParams, merchant_email: 'yalqlb019@gmail.com' },
-    'xpSKf6d4h11LzEOLz'
-  );
-
-  clearCart();
-
-  toast({
-    title: "🎉 تم إرسال طلبك بنجاح!",
-    description: `شكراً لك ${formData.firstName}. رقم طلبك هو: ${docRef.id}`,
-    className: "bg-green-500 text-white",
-    duration: 7000,
-  });
-} catch (error) {
-  // هنا تعامل مع الخطأ لو حدث
-  console.error("Error sending email:", error);
-  toast({
-    title: "حدث خطأ أثناء إرسال الطلب",
-    description: "يرجى المحاولة مرة أخرى أو الاتصال بالدعم.",
-    className: "bg-red-500 text-white",
-    duration: 7000,
-  });
-}
-
-try {
-  // ... كود الحفظ في قاعدة البيانات
+  setIsSubmitting(true);
 
   try {
-    // إرسال البريد
-    await emailjs.send(...);
-    await emailjs.send(...);
-  } catch (emailError) {
-    console.warn("EmailJS error: ", emailError);
+    const orderData = {
+      customerInfo: {
+        name: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        postalCode: formData.postalCode,
+        country: 'Egypt',
+      },
+      items: cartItems.map(item => ({
+        id: item.id,
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        image: item.image || null,
+      })),
+      totalAmount: total,
+      status: 'pending',
+      paymentMethod: formData.paymentMethod,
+      createdAt: Timestamp.now(),
+    };
+
+    // إضافة الطلب إلى Firestore
+    const docRef = await addDoc(collection(db, 'orders'), orderData);
+
+    // تحديث المخزون لكل منتج
+    for (const item of cartItems) {
+      const productRef = doc(db, "products", item.id);
+      const productSnap = await getDoc(productRef);
+      if (productSnap.exists()) {
+        const currentStock = productSnap.data().stock;
+        const newStock = currentStock - item.quantity;
+        await updateDoc(productRef, { stock: newStock < 0 ? 0 : newStock });
+      }
+    }
+
+    // تجهيز HTML للمنتجات للبريد
+    const orderItemsHtmlForEmail = cartItems.map(item => `
+      <tr>
+        <td style="padding: 8px; border: 1px solid #ddd;">${item.name}</td>
+        <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${item.quantity}</td>
+        <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${item.price.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}</td>
+      </tr>
+    `).join('');
+
+    // بيانات البريد
+    const emailParams = {
+      to_name: `${formData.firstName} ${formData.lastName}`,
+      to_email: formData.email,
+      from_name: "متجر Right Water",
+      support_email: "yalqlb019@gmail.com",
+      current_year: new Date().getFullYear(),
+      order_id: docRef.id,
+      order_total: total.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
+      order_address: `${formData.address}, ${formData.city}${formData.postalCode ? ', ' + formData.postalCode : ''}, مصر`,
+      order_items_html: orderItemsHtmlForEmail,
+      customer_phone: formData.phone,
+      payment_method: formData.paymentMethod === 'cod' ? "الدفع عند الاستلام" : formData.paymentMethod,
+    };
+
+    // إرسال البريد (عميل + تاجر)
+    try {
+      await emailjs.send('service_pllfmfx', 'template_client', emailParams, 'xpSKf6d4h11LzEOLz');
+      await emailjs.send('service_pllfmfx', 'template_z9q8e8p', { ...emailParams, merchant_email: 'yalqlb019@gmail.com' }, 'xpSKf6d4h11LzEOLz');
+    } catch (emailError) {
+      console.warn("EmailJS error: ", emailError);
+      toast({
+        title: "خطأ في إرسال البريد",
+        description: "تم تسجيل طلبك بنجاح، ولكن حدث خطأ أثناء إرسال بريد التأكيد. سنتواصل معك قريباً.",
+        variant: "default",
+        duration: 5000,
+      });
+    }
+
+    clearCart();
+
     toast({
-      title: "خطأ في إرسال البريد",
-      description: "تم تسجيل طلبك بنجاح، ولكن حدث خطأ أثناء إرسال بريد التأكيد. سنتواصل معك قريباً.",
-      variant: "default",
-      duration: 5000,
+      title: "🎉 تم إرسال طلبك بنجاح!",
+      description: `شكراً لك ${formData.firstName}. رقم طلبك هو: ${docRef.id}`,
+      className: "bg-green-500 text-white",
+      duration: 7000,
     });
+
+    navigate('/order-success', { state: { orderId: docRef.id, customerName: formData.firstName, totalAmount: total } });
+
+  } catch (error) {
+    console.error("Error placing order: ", error);
+    toast({
+      title: "حدث خطأ",
+      description: "لم نتمكن من إتمام طلبك. يرجى المحاولة مرة أخرى أو الاتصال بالدعم.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsSubmitting(false);
   }
+};
 
   // تأكد أن navigate داخل نفس try block الأساسي وليس بعد catch داخلي
   navigate('/order-success', { state: { orderId: docRef.id, customerName: formData.firstName, totalAmount: total } });
