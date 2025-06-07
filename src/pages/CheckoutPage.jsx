@@ -122,7 +122,7 @@ const CheckoutPage = () => {
       // افترض إن orderItems مصفوفة المنتجات اللي طلبها العميل
 // كل عنصر فيه: name (اسم المنتج)، quantity (الكمية)، price (السعر رقم)
 
-const orderItemsHtml = orderItems.map(item => `
+const orderItemsHtmlForEmail = orderItems.map(item => `
   <tr>
     <td style="padding: 8px; border: 1px solid #ddd;">${item.name}</td>
     <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${item.quantity}</td>
@@ -140,7 +140,7 @@ const emailParams = {
   order_id: docRef.id,
   order_total: total.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
   order_address: `${formData.address}, ${formData.city}${formData.postalCode ? ', ' + formData.postalCode : ''}, مصر`,
-  order_items_html: orderItemsHtml,  // HTML جاهز
+  order_items_html: orderItemsHtmlForEmail,  // HTML جاهز
   customer_phone: formData.phone,
   payment_method: formData.paymentMethod === 'cod' ? "الدفع عند الاستلام" : formData.paymentMethod,
 };
@@ -170,6 +170,16 @@ try {
     className: "bg-green-500 text-white",
     duration: 7000,
   });
+} catch (error) {
+  // هنا تعامل مع الخطأ لو حدث
+  console.error("Error sending email:", error);
+  toast({
+    title: "حدث خطأ أثناء إرسال الطلب",
+    description: "يرجى المحاولة مرة أخرى أو الاتصال بالدعم.",
+    className: "bg-red-500 text-white",
+    duration: 7000,
+  });
+}
 
 } catch (emailError) {
   console.warn("EmailJS error: ", emailError);
