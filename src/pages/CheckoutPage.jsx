@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useCart } from "@/contexts/CartContext";
-import { db } from "@/lib/firebase";
+import { db } from "@/src/firebase";
 import { addDoc, collection, updateDoc, doc, getDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import emailjs from '@emailjs/browser';
