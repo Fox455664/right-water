@@ -181,28 +181,36 @@ try {
   });
 }
 
-} catch (emailError) {
-  console.warn("EmailJS error: ", emailError);
-  toast({
-    title: "خطأ في إرسال البريد",
-    description: "تم تسجيل طلبك بنجاح، ولكن حدث خطأ أثناء إرسال بريد التأكيد. سنتواصل معك قريباً.",
-    variant: "default",
-    duration: 5000,
-  });
-}
-      navigate('/order-success', { state: { orderId: docRef.id, customerName: formData.firstName, totalAmount: total } });
+try {
+  // ... كود الحفظ في قاعدة البيانات
 
-    } catch (error) {
-      console.error("Error placing order: ", error);
-      toast({
-        title: "حدث خطأ",
-        description: "لم نتمكن من إتمام طلبك. يرجى المحاولة مرة أخرى أو الاتصال بالدعم.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  try {
+    // إرسال البريد
+    await emailjs.send(...);
+    await emailjs.send(...);
+  } catch (emailError) {
+    console.warn("EmailJS error: ", emailError);
+    toast({
+      title: "خطأ في إرسال البريد",
+      description: "تم تسجيل طلبك بنجاح، ولكن حدث خطأ أثناء إرسال بريد التأكيد. سنتواصل معك قريباً.",
+      variant: "default",
+      duration: 5000,
+    });
+  }
+
+  // تأكد أن navigate داخل نفس try block الأساسي وليس بعد catch داخلي
+  navigate('/order-success', { state: { orderId: docRef.id, customerName: formData.firstName, totalAmount: total } });
+
+} catch (error) {
+  console.error("Error placing order: ", error);
+  toast({
+    title: "حدث خطأ",
+    description: "لم نتمكن من إتمام طلبك. يرجى المحاولة مرة أخرى أو الاتصال بالدعم.",
+    variant: "destructive",
+  });
+} finally {
+  setIsSubmitting(false);
+}
   
   const shippingCost = cartItems.length > 0 ? 50 : 0;
   const subTotalForDisplay = cartItems.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 0), 0);
