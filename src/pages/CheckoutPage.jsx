@@ -180,6 +180,9 @@ const CheckoutPage = () => {
   // تأكد أن navigate داخل نفس try block الأساسي وليس بعد catch داخلي
   navigate('/order-success', { state: { orderId: docRef.id, customerName: formData.firstName, totalAmount: total } });
 
+try {
+  // تنفيذ الطلب
+  navigate('/order-success', { state: { orderId: docRef.id, customerName: formData.firstName, totalAmount: total } });
 } catch (error) {
   console.error("Error placing order: ", error);
   toast({
