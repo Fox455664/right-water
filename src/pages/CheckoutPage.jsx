@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { CartContext } from "../context/CartContext";
 import { db } from "../firebase"; // تأكد من مسار إعداد Firebase عندك
 import { collection, addDoc, updateDoc, doc, getDoc } from "firebase/firestore";
-import emailjs from "emailjs-com";
+import emailjs from "@emailjs/browser";
 import { motion } from "framer-motion";
 
 import {
