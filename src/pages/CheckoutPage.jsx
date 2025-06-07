@@ -120,40 +120,53 @@ const CheckoutPage = () => {
       ).join('');
 
       const emailParams = {
-        to_name: `${formData.firstName} ${formData.lastName}`,
-        to_email: formData.email,
-        from_name: "متجر Right Water",
-        support_email: "support@rightwater.com", 
-        current_year: new Date().getFullYear(),
-        order_id: docRef.id,
-        order_total: total.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
-        order_address: `${formData.address}, ${formData.city}${formData.postalCode ? ', ' + formData.postalCode : ''}, مصر`,
-        order_items_html: orderItemsHtml,
-        customer_phone: formData.phone,
-        payment_method: formData.paymentMethod === 'cod' ? "الدفع عند الاستلام" : formData.paymentMethod,
-      };
-      
-      try {
-        await emailjs.send('service_pllfmfx', 'template_client', emailParams, 'xpSKf6d4h11LzEOLz');
-        await emailjs.send('service_pllfmfx', 'template_z9q8e8p', { ...emailParams, merchant_email: 'merchant@rightwater.com' }, 'xpSKf6d4h11LzEOLz');
-      } catch (emailError) {
-        console.warn("EmailJS error: ", emailError);
-        toast({
-            title: "خطأ في إرسال البريد",
-            description: "تم تسجيل طلبك بنجاح، ولكن حدث خطأ أثناء إرسال بريد التأكيد. سنتواصل معك قريباً.",
-            variant: "default",
-            duration: 5000,
-        });
-      }
-      
-      clearCart(); 
-      
-      toast({
-        title: "🎉 تم إرسال طلبك بنجاح!",
-        description: `شكراً لك ${formData.firstName}. رقم طلبك هو: ${docRef.id}`,
-        className: "bg-green-500 text-white",
-        duration: 7000,
-      });
+  to_name: `${formData.firstName} ${formData.lastName}`,
+  to_email: formData.email,  // مهم جدًا لتحديد مستلم البريد
+  from_name: "متجر Right Water",
+  support_email: "yalqlb019@gmail.com", 
+  current_year: new Date().getFullYear(),
+  order_id: docRef.id,
+  order_total: total.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
+  order_address: `${formData.address}, ${formData.city}${formData.postalCode ? ', ' + formData.postalCode : ''}, مصر`,
+  order_items_html: orderItemsHtml,
+  customer_phone: formData.phone,
+  payment_method: formData.paymentMethod === 'cod' ? "الدفع عند الاستلام" : formData.paymentMethod,
+};
+
+try {
+  // إرسال البريد للعميل
+  await emailjs.send(
+    'service_pllfmfx',
+    'template_client', // قالب العميل
+    emailParams,
+    'xpSKf6d4h11LzEOLz'
+  );
+
+  // إرسال البريد للتاجر (مع إضافة بريد التاجر)
+  await emailjs.send(
+    'service_pllfmfx',
+    'template_z9q8e8p', // قالب التاجر
+    { ...emailParams, merchant_email: 'yalqlb019@gmail.com' },
+    'xpSKf6d4h11LzEOLz'
+  );
+} catch (emailError) {
+  console.warn("EmailJS error: ", emailError);
+  toast({
+    title: "خطأ في إرسال البريد",
+    description: "تم تسجيل طلبك بنجاح، ولكن حدث خطأ أثناء إرسال بريد التأكيد. سنتواصل معك قريباً.",
+    variant: "default",
+    duration: 5000,
+  });
+}
+
+clearCart();
+
+toast({
+  title: "🎉 تم إرسال طلبك بنجاح!",
+  description: `شكراً لك ${formData.firstName}. رقم طلبك هو: ${docRef.id}`,
+  className: "bg-green-500 text-white",
+  duration: 7000,
+});
 
       navigate('/order-success', { state: { orderId: docRef.id, customerName: formData.firstName, totalAmount: total } });
 
