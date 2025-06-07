@@ -123,23 +123,19 @@ const orderItemsHtml = cartItems.map(item => `
       </tr>
     `).join('');
 
-    // إرسال البريد الإلكتروني للعميل
-    await emailjs.send(
-      "service_v7bjx7b",  // استبدل بالـ Service ID الخاص بك
-      "template_3bnjzm6", // استبدل بالـ Template ID الخاص بك
-      {
-        to_name: `${formData.firstName} ${formData.lastName}`,
-        to_email: formData.email,
-        from_name: "متجر Right Water",
-        support_email: "yalqlb019@gmail.com",
-        current_year: new Date().getFullYear(),
-        order_id: docRef.id,
-        order_total: total.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
-        order_address: `${formData.address}, ${formData.city}${formData.postalCode ? ', ' + formData.postalCode : ''}, مصر`,
-        order_items_html: orderItemsHtml,
-        customer_phone: formData.phone,
-        payment_method: formData.paymentMethod === 'cod' ? "الدفع عند الاستلام" : formData.paymentMethod,
-      },
+    const emailParams = {
+  to_name: `${formData.firstName} ${formData.lastName}`,
+  to_email: formData.email,
+  from_name: "متجر Right Water",
+  support_email: "yalqlb019@gmail.com",
+  current_year: new Date().getFullYear(),
+  order_id: docRef.id,
+  order_total: total.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
+  order_address: `${formData.address}, ${formData.city}${formData.postalCode ? ', ' + formData.postalCode : ''}, مصر`,
+  order_items_html: orderItemsHtml,
+  customer_phone: formData.phone,
+  payment_method: formData.paymentMethod === 'cod' ? "الدفع عند الاستلام" : formData.paymentMethod,
+}; // <-- هنا قفلت الكائن والقوس
 
 try {
   // إرسال البريد للعميل
@@ -157,6 +153,11 @@ try {
     { ...emailParams, merchant_email: 'yalqlb019@gmail.com' },
     'xpSKf6d4h11LzEOLz'
   );
+
+} catch (error) {
+  console.error('فشل إرسال البريد:', error);
+  // ممكن تعالج الخطأ هنا أو تعرض رسالة للمستخدم
+}
 
   clearCart();
 
