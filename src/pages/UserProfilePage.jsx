@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -75,6 +75,10 @@ const getStatusLabelAndIcon = (status) => {
 const UserProfilePage = () => {
   const { currentUser, signOut, updateUserProfile } = useAuth();
   const navigate = useNavigate();
+
+  // ref to scroll to orders section
+  const ordersSectionRef = useRef(null);
+
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState({
@@ -96,6 +100,7 @@ const UserProfilePage = () => {
       orderBy('createdAt', 'desc')
     );
 
+    // Firebase real-time listener
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const ordersList = querySnapshot.docs.map(doc => ({
         id: doc.id,
@@ -146,6 +151,13 @@ const UserProfilePage = () => {
         description: "حدث خطأ أثناء تسجيل الخروج. يرجى المحاولة مرة أخرى.",
         variant: "destructive",
       });
+    }
+  };
+
+  // تمرير تلقائي لقسم الطلبات عند الضغط على زر "طلباتي"
+  const scrollToOrders = () => {
+    if (ordersSectionRef.current) {
+      ordersSectionRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
@@ -201,7 +213,7 @@ const UserProfilePage = () => {
                   <Button
                     variant="outline"
                     className="w-full justify-start"
-                    onClick={() => { /* Scroll or navigation for orders */ }}
+                    onClick={scrollToOrders} // هنا تم الربط مع تمرير القسم
                   >
                     <Package className="mr-2 rtl:ml-2 rtl:mr-0 h-5 w-5" />
                     طلباتي
@@ -209,7 +221,7 @@ const UserProfilePage = () => {
                   <Button
                     variant="outline"
                     className="w-full justify-start"
-                    onClick={() => { /* Scroll or navigation for settings */ }}
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} // للتمرير لأعلى الصفحة (الإعدادات)
                   >
                     <Settings className="mr-2 rtl:ml-2 rtl:mr-0 h-5 w-5" />
                     إعدادات الحساب
@@ -273,7 +285,10 @@ const UserProfilePage = () => {
               </div>
 
               {/* Recent Orders */}
-              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+              <div
+                ref={ordersSectionRef}
+                className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6"
+              >
                 <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-6">
                   طلباتي السابقة
                 </h3>
