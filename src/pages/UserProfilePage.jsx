@@ -1,238 +1,340 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/components/ui/use-toast';
-import { User, Mail, KeyRound, Edit3, Save, Loader2 } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 import { motion } from 'framer-motion';
-import { updateProfile } from 'firebase/auth';
+import {
+  User,
+  Package,
+  Clock,
+  Settings,
+  LogOut,
+  Loader2,
+  Truck,
+  PackageCheck,
+  PackageX,
+} from 'lucide-react';
+import {
+  db,
+  collection,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+} from '@/lib/firebase';
+
+const statusOptions = [
+  {
+    value: "pending",
+    label: "قيد الانتظار",
+    icon: <Loader2 className="h-4 w-4 text-yellow-500" />,
+  },
+  {
+    value: "processing",
+    label: "قيد المعالجة",
+    icon: <Truck className="h-4 w-4 text-blue-500" />,
+  },
+  {
+    value: "shipped",
+    label: "تم الشحن",
+    icon: <Truck className="h-4 w-4 text-sky-500" />,
+  },
+  {
+    value: "delayed",
+    label: "تأجيل",
+    icon: <Clock className="h-4 w-4 text-orange-500" />,
+  },
+  {
+    value: "delivered",
+    label: "تم التسليم",
+    icon: <PackageCheck className="h-4 w-4 text-green-500" />,
+  },
+  {
+    value: "cancelled",
+    label: "ملغي",
+    icon: <PackageX className="h-4 w-4 text-red-500" />,
+  },
+];
+
+const getStatusLabelAndIcon = (status) => {
+  const found = statusOptions.find(option => option.value === status);
+  if (found) {
+    return (
+      <div className="flex items-center space-x-1 rtl:space-x-reverse text-sm text-slate-500 dark:text-slate-400">
+        {found.icon}
+        <span>{found.label}</span>
+      </div>
+    );
+  }
+  return <span className="text-sm text-slate-500 dark:text-slate-400">مكتمل</span>;
+};
 
 const UserProfilePage = () => {
-  const { currentUser, loading, updateUserPassword, reauthenticateUser } = useAuth();
-  const { toast } = useToast();
-
-  const [displayName, setDisplayName] = useState('');
-  const [email, setEmail] = useState('');
-  
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState('');
-  
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [nameLoading, setNameLoading] = useState(false);
-  const [passwordLoading, setPasswordLoading] = useState(false);
+  const { user, logout, updateUserProfile } = useAuth();
+  const navigate = useNavigate();
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [profileData, setProfileData] = useState({
+    displayName: user?.displayName || '',
+    email: user?.email || '',
+    phone: user?.phoneNumber || ''
+  });
 
   useEffect(() => {
-    if (currentUser) {
-      setDisplayName(currentUser.displayName || '');
-      setEmail(currentUser.email || '');
-    }
-  }, [currentUser]);
-
-  const handleNameUpdate = async (e) => {
-    e.preventDefault();
-    if (!currentUser) return;
-    setNameLoading(true);
-    try {
-      await updateProfile(currentUser, { displayName });
-      toast({
-        title: "✅ تم تحديث الاسم",
-        description: "تم تحديث اسمك بنجاح.",
-        className: "bg-green-500 text-white",
-      });
-      setIsEditingName(false);
-    } catch (error) {
-      toast({
-        title: "❌ خطأ في تحديث الاسم",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setNameLoading(false);
-    }
-  };
-
-  const handlePasswordUpdate = async (e) => {
-    e.preventDefault();
-    if (!currentUser) return;
-    if (newPassword !== confirmNewPassword) {
-      toast({
-        title: "كلمتا المرور غير متطابقتين",
-        description: "يرجى التأكد من تطابق كلمة المرور الجديدة وتأكيدها.",
-        variant: "destructive",
-      });
+    if (!user) {
+      setLoading(false);
       return;
     }
-    if (!currentPassword) {
-        toast({
-            title: "كلمة المرور الحالية مطلوبة",
-            description: "يرجى إدخال كلمة المرور الحالية للمتابعة.",
-            variant: "destructive",
-        });
-        return;
-    }
 
-    setPasswordLoading(true);
-    try {
-      await reauthenticateUser(currentPassword);
-      await updateUserPassword(newPassword);
+    setLoading(true);
+    const q = query(
+      collection(db, 'orders'),
+      where('userId', '==', user.uid),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const ordersList = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setOrders(ordersList);
+      setLoading(false);
+    }, (error) => {
+      console.error('Error fetching orders:', error);
       toast({
-        title: "🔑 تم تغيير كلمة المرور بنجاح",
-        description: "تم تحديث كلمة المرور الخاصة بك.",
-        className: "bg-green-500 text-white",
-      });
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmNewPassword('');
-    } catch (error) {
-      let errorMessage = error.message;
-      if (error.code === 'auth/wrong-password') {
-        errorMessage = "كلمة المرور الحالية غير صحيحة. يرجى المحاولة مرة أخرى.";
-      } else if (error.code === 'auth/weak-password') {
-        errorMessage = "كلمة المرور الجديدة ضعيفة جداً. يجب أن تتكون من 6 أحرف على الأقل.";
-      }
-      toast({
-        title: "❌ خطأ في تغيير كلمة المرور",
-        description: errorMessage,
+        title: "خطأ في تحميل الطلبات",
+        description: "حدث خطأ أثناء تحميل طلباتك السابقة.",
         variant: "destructive",
       });
-    } finally {
-      setPasswordLoading(false);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault();
+    if (!user) return;
+    try {
+      await updateUserProfile({
+        displayName: profileData.displayName
+      });
+      toast({
+        title: "تم تحديث الملف الشخصي",
+        description: "تم تحديث معلوماتك الشخصية بنجاح.",
+      });
+    } catch (error) {
+      toast({
+        title: "خطأ في تحديث الملف الشخصي",
+        description: "حدث خطأ أثناء تحديث معلوماتك. يرجى المحاولة مرة أخرى.",
+        variant: "destructive",
+      });
     }
   };
 
-  if (loading) {
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      toast({
+        title: "خطأ في تسجيل الخروج",
+        description: "حدث خطأ أثناء تسجيل الخروج. يرجى المحاولة مرة أخرى.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('ar-EG', { style: 'currency', currency: 'EGP' }).format(price);
+  };
+
+  const formatDate = (timestamp) => {
+    if (!timestamp || !timestamp.seconds) return 'تاريخ غير متوفر';
+    return new Date(timestamp.seconds * 1000).toLocaleDateString('ar-EG', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="ml-3 text-lg">جاري تحميل بيانات الملف الشخصي...</p>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <p>الرجاء تسجيل الدخول لعرض هذه الصفحة.</p>
       </div>
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="container mx-auto px-4 py-12 max-w-2xl"
-    >
-      <Card className="shadow-xl glassmorphism-card overflow-hidden">
-        <CardHeader className="bg-primary/10 p-8 text-center">
-          <User className="mx-auto h-20 w-20 text-primary mb-4 p-3 bg-primary/20 rounded-full" />
-          <CardTitle className="text-3xl font-bold text-primary">الملف الشخصي</CardTitle>
-          <CardDescription className="text-muted-foreground">
-            إدارة معلومات حسابك وتفضيلات الأمان.
-          </CardDescription>
-        </CardHeader>
+    <div className="bg-slate-50 dark:bg-slate-900 min-h-screen py-12" dir="rtl">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-8"
+          >
+            {/* Profile Sidebar */}
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="md:col-span-1"
+            >
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+                <div className="text-center mb-6">
+                  <div className="w-24 h-24 bg-sky-100 dark:bg-sky-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <User className="w-12 h-12 text-sky-500" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200">
+                    {user.displayName || 'المستخدم'}
+                  </h2>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm">{user.email}</p>
+                </div>
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => { /* Scroll or navigation for orders */ }}
+                  >
+                    <Package className="mr-2 rtl:ml-2 rtl:mr-0 h-5 w-5" />
+                    طلباتي
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => { /* Scroll or navigation for settings */ }}
+                  >
+                    <Settings className="mr-2 rtl:ml-2 rtl:mr-0 h-5 w-5" />
+                    إعدادات الحساب
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="w-full justify-start"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="mr-2 rtl:ml-2 rtl:mr-0 h-5 w-5" />
+                    تسجيل الخروج
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
 
-        <CardContent className="p-8 space-y-8">
-          {/* Display Name Section */}
-          <form onSubmit={handleNameUpdate} className="space-y-4">
-            <h3 className="text-xl font-semibold text-foreground flex items-center">
-              <User className="ml-2 h-5 w-5 text-primary" /> معلومات الحساب
-            </h3>
-            <div>
-              <Label htmlFor="displayName" className="text-muted-foreground">الاسم المعروض</Label>
-              <div className="flex items-center space-x-2 space-x-reverse mt-1">
-                <Input
-                  id="displayName"
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  disabled={!isEditingName || nameLoading}
-                  className="bg-background/70 border-primary/30 focus:border-primary"
-                />
-                {!isEditingName ? (
-                  <Button type="button" variant="outline" size="icon" onClick={() => setIsEditingName(true)} className="border-primary text-primary hover:bg-primary/10">
-                    <Edit3 className="h-5 w-5" />
+            {/* Main Content */}
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="md:col-span-2 space-y-8"
+            >
+              {/* Profile Settings */}
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+                <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-6">
+                  المعلومات الشخصية
+                </h3>
+                <form onSubmit={handleProfileUpdate} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="displayName">الاسم</Label>
+                    <Input
+                      id="displayName"
+                      value={profileData.displayName}
+                      onChange={(e) => setProfileData(prev => ({ ...prev, displayName: e.target.value }))}
+                      className="dark:bg-slate-700"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">البريد الإلكتروني</Label>
+                    <Input
+                      id="email"
+                      value={profileData.email}
+                      disabled
+                      className="bg-slate-50 dark:bg-slate-700/50"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">رقم الهاتف</Label>
+                    <Input
+                      id="phone"
+                      value={profileData.phone}
+                      onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
+                      className="dark:bg-slate-700"
+                    />
+                  </div>
+                  <Button type="submit" className="bg-sky-500 hover:bg-sky-600 text-white">
+                    حفظ التغييرات
                   </Button>
+                </form>
+              </div>
+
+              {/* Recent Orders */}
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+                <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-6">
+                  طلباتي السابقة
+                </h3>
+                {loading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-8 w-8 text-sky-500 animate-spin" />
+                  </div>
+                ) : orders.length > 0 ? (
+                  <div className="space-y-4">
+                    {orders.map((order) => (
+                      <div
+                        key={order.id}
+                        className="border dark:border-slate-700 rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <p className="font-medium text-slate-800 dark:text-slate-200">
+                              طلب #{order.id.slice(0, 8)}...
+                            </p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center">
+                              <Clock className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
+                              {formatDate(order.createdAt)}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium text-sky-600 dark:text-sky-400">
+                              {formatPrice(order.total)}
+                            </p>
+                            {getStatusLabelAndIcon(order.status)}
+                          </div>
+                        </div>
+                        {/* عرض تفاصيل المنتجات داخل الطلب */}
+                        <div className="space-y-2">
+                          {order.products?.map((product, idx) => (
+                            <div
+                              key={idx}
+                              className="flex justify-between items-center border-t pt-2 border-slate-200 dark:border-slate-700"
+                            >
+                              <p className="text-sm text-slate-700 dark:text-slate-300">
+                                {product.name} (x{product.quantity})
+                              </p>
+                              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                {formatPrice(product.price * product.quantity)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
-                  <Button type="submit" variant="default" size="icon" disabled={nameLoading} className="bg-primary hover:bg-primary/90">
-                    {nameLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-                  </Button>
+                  <p className="text-center text-slate-500 dark:text-slate-400">
+                    لا توجد طلبات سابقة.
+                  </p>
                 )}
               </div>
-            </div>
-            <div>
-              <Label htmlFor="email" className="text-muted-foreground">البريد الإلكتروني</Label>
-              <div className="relative mt-1">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  disabled
-                  className="pl-10 bg-muted/50 cursor-not-allowed"
-                />
-              </div>
-            </div>
-          </form>
-
-          <hr className="border-border/50" />
-
-          {/* Change Password Section */}
-          <form onSubmit={handlePasswordUpdate} className="space-y-4">
-            <h3 className="text-xl font-semibold text-foreground flex items-center">
-              <KeyRound className="ml-2 h-5 w-5 text-primary" /> تغيير كلمة المرور
-            </h3>
-             <div>
-              <Label htmlFor="currentPassword">كلمة المرور الحالية</Label>
-              <Input
-                id="currentPassword"
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                required
-                className="mt-1 bg-background/70 border-primary/30 focus:border-primary"
-                placeholder="أدخل كلمة المرور الحالية"
-              />
-            </div>
-            <div>
-              <Label htmlFor="newPassword">كلمة المرور الجديدة</Label>
-              <Input
-                id="newPassword"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-                className="mt-1 bg-background/70 border-primary/30 focus:border-primary"
-                placeholder="6 أحرف على الأقل"
-              />
-            </div>
-            <div>
-              <Label htmlFor="confirmNewPassword">تأكيد كلمة المرور الجديدة</Label>
-              <Input
-                id="confirmNewPassword"
-                type="password"
-                value={confirmNewPassword}
-                onChange={(e) => setConfirmNewPassword(e.target.value)}
-                required
-                className="mt-1 bg-background/70 border-primary/30 focus:border-primary"
-                placeholder="أعد كتابة كلمة المرور الجديدة"
-              />
-            </div>
-            <Button type="submit" className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90" disabled={passwordLoading}>
-              {passwordLoading ? (
-                <>
-                  <Loader2 className="ml-2 h-5 w-5 animate-spin" />
-                  جاري تحديث كلمة المرور...
-                </>
-              ) : (
-                "تحديث كلمة المرور"
-              )}
-            </Button>
-          </form>
-        </CardContent>
-        <CardFooter className="p-6 bg-primary/5 text-center">
-            <p className="text-xs text-muted-foreground">
-                لأمان حسابك، لا تشارك كلمة المرور الخاصة بك مع أي شخص.
-            </p>
-        </CardFooter>
-      </Card>
-    </motion.div>
+            </motion.div>
+          </motion.div>
+        </div>
+      </div>
+    </div>
   );
 };
 
