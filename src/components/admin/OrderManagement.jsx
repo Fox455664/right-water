@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+"import React, { useState, useEffect } from "react";
 import {
   collection,
   getDocs,
@@ -294,7 +294,7 @@ const OrderManagement = () => {
                           </AlertDialogTrigger>
                           <AlertDialogContent className="text-right">
                             <AlertDialogHeader>
-                              <<AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+                              <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
                             <AlertDialogDescription>
                               هل أنت متأكد من حذف الطلب رقم {selectedOrder?.id}؟ لا يمكن التراجع عن هذا الإجراء.
                             </AlertDialogDescription>
