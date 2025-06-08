@@ -5,7 +5,8 @@ import {
   sendPasswordResetEmail,
   updatePassword as firebaseUpdatePassword,
   reauthenticateWithCredential,
-  EmailAuthProvider
+  EmailAuthProvider,
+  updateProfile
 } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/firebase';
@@ -67,6 +68,20 @@ export function AuthProvider({ children }) {
     return reauthenticateWithCredential(currentUser, credential);
   };
 
+  // دالة تحديث بيانات الملف الشخصي (مثل displayName)
+  const updateUserProfile = async (updates) => {
+    if (!currentUser) {
+      return Promise.reject(new Error("لا يوجد مستخدم حالياً."));
+    }
+    try {
+      await updateProfile(currentUser, updates);
+      // تحديث حالة المستخدم الحالية بعد التعديل
+      setCurrentUser({ ...auth.currentUser });
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  };
+
   const value = {
     currentUser,
     isAdmin,
@@ -75,6 +90,7 @@ export function AuthProvider({ children }) {
     sendPasswordReset,
     updateUserPassword,
     reauthenticateUser,
+    updateUserProfile,  // أضفنا الدالة هنا
   };
 
   if (loading) {
