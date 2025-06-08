@@ -69,4 +69,19 @@ const CancelledOrders = () => {
             </TableHeader>
             <TableBody>
               {orders.map(order => (
-                <TableRow
+                <TableRow key={order.id}>
+                  <TableCell className="text-right">{order.id}</TableCell>
+                  <TableCell className="text-right">{order.customerName || 'غير معروف'}</TableCell>
+                  <TableCell className="text-right">{order.date.toLocaleDateString('ar-EG')}</TableCell>
+                  <TableCell className="text-right">{order.total?.toFixed(2) || '0.00'}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default CancelledOrders;
