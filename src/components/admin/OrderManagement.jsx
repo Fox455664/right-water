@@ -84,7 +84,7 @@ const OrderManagement = () => {
       );
       toast({
         title: "✅ تم تحديث حالة الطلب",
-        description: `تم تغيير حالة الطلب ${orderId} إلى ${statusOptions.find(s => s.value === newStatus)?.label || newStatus}.`,
+        description: `تم تغيير حالة الطلب إلى ${statusOptions.find(s => s.value === newStatus)?.label || newStatus}.`,
         className: "bg-green-500 text-white"
       });
     } catch (error) {
@@ -224,8 +224,7 @@ const OrderManagement = () => {
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
-                      </div>
-                    </TableCell>
+                      </div</TableCell>
                   </motion.tr>
                 ))}
               </AnimatePresence>
@@ -233,8 +232,49 @@ const OrderManagement = () => {
           </Table>
         </div>
       )}
+
+      {/* مودال عرض تفاصيل الطلب */}
+      <AnimatePresence>
+        {isViewModalOpen && selectedOrder && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            onClick={() => setIsViewModalOpen(false)}
+          >
+            <motion.div
+              className="bg-white rounded-lg max-w-lg w-full p-6 shadow-lg"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-xl font-semibold mb-4 text-right">تفاصيل الطلب: {selectedOrder.id}</h3>
+              <div className="space-y-2 text-right">
+                <p><strong>اسم العميل:</strong> {selectedOrder.customerName}</p>
+                <p><strong>البريد الإلكتروني:</strong> {selectedOrder.email}</p>
+                <p><strong>رقم الهاتف:</strong> {selectedOrder.phone}</p>
+                <p><strong>العنوان:</strong> {selectedOrder.address}</p>
+                <p><strong>تاريخ الطلب:</strong> {selectedOrder.date.toLocaleString('ar-EG')}</p>
+                <p><strong>الحالة:</strong> {statusOptions.find(s => s.value === selectedOrder.status)?.label || selectedOrder.status}</p>
+                <p><strong>الإجمالي:</strong> {selectedOrder.total.toLocaleString('ar-EG')} ج.م</p>
+                <div>
+                  <strong>المنتجات:</strong>
+                  <ul className="list-disc list-inside max-h-40 overflow-y-auto mt-1">
+                    {selectedOrder.items?.map((item, idx) => (
+                      <li key={idx}>{item.name} - الكمية: {item.quantity} - السعر: {item.price.toLocaleString('ar-EG')} ج.م</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+              <div className="mt-6 text-center">
+                <Button onClick={() => setIsViewModalOpen(false)}>إغلاق</Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
 
 export default OrderManagement;
+                    
