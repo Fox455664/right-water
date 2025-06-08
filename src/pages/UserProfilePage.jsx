@@ -73,18 +73,18 @@ const getStatusLabelAndIcon = (status) => {
 };
 
 const UserProfilePage = () => {
-  const { user, logout, updateUserProfile } = useAuth();
+  const { currentUser, signOut, updateUserProfile } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState({
-    displayName: user?.displayName || '',
-    email: user?.email || '',
-    phone: user?.phoneNumber || ''
+    displayName: currentUser?.displayName || '',
+    email: currentUser?.email || '',
+    phone: currentUser?.phoneNumber || ''
   });
 
   useEffect(() => {
-    if (!user) {
+    if (!currentUser) {
       setLoading(false);
       return;
     }
@@ -92,7 +92,7 @@ const UserProfilePage = () => {
     setLoading(true);
     const q = query(
       collection(db, 'orders'),
-      where('userId', '==', user.uid),
+      where('userId', '==', currentUser.uid),
       orderBy('createdAt', 'desc')
     );
 
@@ -114,11 +114,11 @@ const UserProfilePage = () => {
     });
 
     return () => unsubscribe();
-  }, [user]);
+  }, [currentUser]);
 
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
-    if (!user) return;
+    if (!currentUser) return;
     try {
       await updateUserProfile({
         displayName: profileData.displayName
@@ -138,7 +138,7 @@ const UserProfilePage = () => {
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await signOut();
       navigate('/');
     } catch (error) {
       toast({
@@ -162,7 +162,7 @@ const UserProfilePage = () => {
     });
   };
 
-  if (!user) {
+  if (!currentUser) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
         <p>الرجاء تسجيل الدخول لعرض هذه الصفحة.</p>
@@ -193,9 +193,9 @@ const UserProfilePage = () => {
                     <User className="w-12 h-12 text-sky-500" />
                   </div>
                   <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200">
-                    {user.displayName || 'المستخدم'}
+                    {currentUser.displayName || 'المستخدم'}
                   </h2>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm">{user.email}</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm">{currentUser.email}</p>
                 </div>
                 <div className="space-y-2">
                   <Button
