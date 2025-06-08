@@ -25,10 +25,6 @@ import OrderDetailsView from '@/components/admin/OrderDetailsView';
 import ProductManagement from '@/components/admin/ProductManagement';
 import AdminSettings from '@/components/admin/AdminSettings';
 
-import DeliveredOrders from '@/components/admin/DeliveredOrders';
-import CancelledOrders from '@/components/admin/CancelledOrders';
-import PostponedOrders from '@/components/admin/PostponedOrders';
-
 import { Outlet } from 'react-router-dom';
 
 const ProductDetailsPage = () => (
@@ -97,11 +93,6 @@ function App() {
                 <Route path="orders/:orderId" element={<OrderDetailsView />} />
                 <Route path="products" element={<ProductManagement />} />
                 <Route path="settings" element={<AdminSettings />} />
-
-                {/* الطلبات حسب الحالة */}
-                <Route path="delivered" element={<DeliveredOrders />} />
-                <Route path="cancelled" element={<CancelledOrders />} />
-                <Route path="postponed" element={<PostponedOrders />} />
               </Route>
 
               <Route path="*" element={<AnimatedPage><NotFoundPage /></AnimatedPage>} />
