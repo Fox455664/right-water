@@ -23,7 +23,11 @@ import AdminDashboardPage from '@/pages/AdminDashboardPage';
 import OrderManagement from '@/components/admin/OrderManagement';
 import OrderDetailsView from '@/components/admin/OrderDetailsView';
 import ProductManagement from '@/components/admin/ProductManagement';
-import AdminSettings from '@/components/admin/AdminSettings'; // صفحة اختيارية
+import AdminSettings from '@/components/admin/AdminSettings';
+
+import DeliveredOrders from '@/components/admin/DeliveredOrders';
+import CancelledOrders from '@/components/admin/CancelledOrders';
+import PostponedOrders from '@/components/admin/PostponedOrders';
 
 import { Outlet } from 'react-router-dom';
 
@@ -79,7 +83,7 @@ function App() {
               <Route path="about" element={<AnimatedPage><AboutPage /></AnimatedPage>} />
               <Route path="contact" element={<AnimatedPage><ContactPage /></AnimatedPage>} />
 
-              {/* لوحة تحكم المسؤول مع المسارات الفرعية داخل AdminDashboardPage */}
+              {/* لوحة تحكم المسؤول */}
               <Route 
                 path="AdminDashboard" 
                 element={
@@ -93,6 +97,11 @@ function App() {
                 <Route path="orders/:orderId" element={<OrderDetailsView />} />
                 <Route path="products" element={<ProductManagement />} />
                 <Route path="settings" element={<AdminSettings />} />
+
+                {/* الطلبات حسب الحالة */}
+                <Route path="delivered" element={<DeliveredOrders />} />
+                <Route path="cancelled" element={<CancelledOrders />} />
+                <Route path="postponed" element={<PostponedOrders />} />
               </Route>
 
               <Route path="*" element={<AnimatedPage><NotFoundPage /></AnimatedPage>} />
