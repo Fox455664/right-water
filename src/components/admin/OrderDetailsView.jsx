@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   db,
   deleteDoc,
@@ -9,55 +9,124 @@ import {
   collection,
   onSnapshot,
   query,
-  orderBy
-} from '@/firebase';
+  orderBy,
+} from "@/firebase";
 
 import {
-  Table, TableBody, TableCell, TableHead,
-  TableHeader, TableRow
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import {
-  Select, SelectContent, SelectItem,
-  SelectTrigger, SelectValue
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog, DialogContent, DialogDescription,
-  DialogHeader, DialogTitle, DialogFooter
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog.jsx";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel,
-  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogHeader, AlertDialogTitle
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Card, CardContent, CardHeader, CardTitle
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
 
 import {
-  Eye, PackageCheck, PackageX, Truck,
-  Loader2, AlertTriangle, UserCircle,
-  CalendarDays, ListOrdered as ListOrderedIcon, Trash2
-} from 'lucide-react';
-import { motion } from 'framer-motion';
-import { useToast } from '@/components/ui/use-toast';
+  Eye,
+  PackageCheck,
+  PackageX,
+  Truck,
+  Loader2,
+  AlertTriangle,
+  UserCircle,
+  CalendarDays,
+  ListOrdered as ListOrderedIcon,
+  Trash2,
+  Clock, // أيقونة ساعة مناسبة للتأجيل
+} from "lucide-react";
+import { motion } from "framer-motion";
+import { useToast } from "@/components/ui/use-toast";
+
+// debounce helper function
+function debounce(fn, delay) {
+  let timeoutId;
+  return (...args) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn(...args), delay);
+  };
+}
 
 const statusOptions = [
-  { value: 'pending', label: 'قيد الانتظار', icon: <Loader2 className="h-4 w-4 text-yellow-500" /> },
-  { value: 'processing', label: 'قيد المعالجة', icon: <Truck className="h-4 w-4 text-blue-500" /> },
-  { value: 'shipped', label: 'تم الشحن', icon: <Truck className="h-4 w-4 text-sky-500" /> },
-  { value: 'delivered', label: 'تم التسليم', icon: <PackageCheck className="h-4 w-4 text-green-500" /> },
-  { value: 'cancelled', label: 'ملغي', icon: <PackageX className="h-4 w-4 text-red-500" /> },
+  {
+    value: "pending",
+    label: "قيد الانتظار",
+    icon: <Loader2 className="h-4 w-4 text-yellow-500" />,
+  },
+  {
+    value: "processing",
+    label: "قيد المعالجة",
+    icon: <Truck className="h-4 w-4 text-blue-500" />,
+  },
+  {
+    value: "shipped",
+    label: "تم الشحن",
+    icon: <Truck className="h-4 w-4 text-sky-500" />,
+  },
+  {
+    value: "delayed", // الحالة الجديدة
+    label: "تأجيل",
+    icon: <Clock className="h-4 w-4 text-orange-500" />,
+  },
+  {
+    value: "delivered",
+    label: "تم التسليم",
+    icon: <PackageCheck className="h-4 w-4 text-green-500" />,
+  },
+  {
+    value: "cancelled",
+    label: "ملغي",
+    icon: <PackageX className="h-4 w-4 text-red-500" />,
+  },
 ];
 
 const getStatusStyles = (status) => {
   switch (status) {
-    case 'pending': return 'bg-yellow-100 text-yellow-700 border-yellow-300';
-    case 'processing': return 'bg-blue-100 text-blue-700 border-blue-300';
-    case 'shipped': return 'bg-sky-100 text-sky-700 border-sky-300';
-    case 'delivered': return 'bg-green-100 text-green-700 border-green-300';
-    case 'cancelled': return 'bg-red-100 text-red-700 border-red-300';
-    default: return 'bg-gray-100 text-gray-700 border-gray-300';
+    case "pending":
+      return "bg-yellow-100 text-yellow-700 border-yellow-300";
+    case "processing":
+      return "bg-blue-100 text-blue-700 border-blue-300";
+    case "shipped":
+      return "bg-sky-100 text-sky-700 border-sky-300";
+    case "delayed": // ستايل جديد لحالة التأجيل
+      return "bg-orange-100 text-orange-700 border-orange-300";
+    case "delivered":
+      return "bg-green-100 text-green-700 border-green-300";
+    case "cancelled":
+      return "bg-red-100 text-red-700 border-red-300";
+    default:
+      return "bg-gray-100 text-gray-700 border-gray-300";
   }
 };
 
@@ -70,37 +139,66 @@ const OrderDetailsView = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState(null);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   useEffect(() => {
-    const ordersQuery = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+    const ordersQuery = query(
+      collection(db, "orders"),
+      orderBy("createdAt", "desc")
+    );
 
-    const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
-      const fetchedOrders = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date()
-      }));
-      setOrders(fetchedOrders);
-      setLoading(false);
-      setError(null);
-    }, (err) => {
-      console.error("Error fetching orders: ", err);
-      setError("حدث خطأ أثناء تحميل الطلبات من قاعدة البيانات.");
-      setLoading(false);
-    });
+    const unsubscribe = onSnapshot(
+      ordersQuery,
+      (snapshot) => {
+        const fetchedOrders = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+          };
+        });
+        setOrders(fetchedOrders);
+        setLoading(false);
+        setError(null);
+      },
+      (err) => {
+        console.error("Error fetching orders: ", err);
+        setError("حدث خطأ أثناء تحميل الطلبات من قاعدة البيانات.");
+        setLoading(false);
+      }
+    );
 
     return () => unsubscribe();
   }, []);
 
+  // debounce تحديث البحث
+  const debouncedSetSearch = useCallback(
+    debounce((value) => {
+      setDebouncedSearch(value.trim().toLowerCase());
+    }, 300),
+    []
+  );
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    debouncedSetSearch(e.target.value);
+  };
+
   const handleStatusChange = async (orderId, newStatus) => {
+    const order = orders.find((o) => o.id === orderId);
+    if (order?.status === newStatus) return; // لا يحدث إذا نفس الحالة
+
     try {
-      const orderRef = doc(db, 'orders', orderId);
+      const orderRef = doc(db, "orders", orderId);
       await updateDoc(orderRef, { status: newStatus });
       toast({
         title: "✅ تم تحديث حالة الطلب",
-        description: `تم تغيير حالة الطلب إلى ${statusOptions.find(s => s.value === newStatus)?.label || newStatus}.`,
-        className: "bg-green-500 text-white"
+        description: `تم تغيير حالة الطلب إلى ${
+          statusOptions.find((s) => s.value === newStatus)?.label || newStatus
+        }.`,
+        className: "bg-green-500 text-white",
       });
     } catch (err) {
       toast({ title: "❌ خطأ في تحديث الحالة", description: err.message, variant: "destructive" });
@@ -120,14 +218,16 @@ const OrderDetailsView = () => {
   const executeDeleteOrder = async () => {
     if (!orderToDelete) return;
     try {
-      await deleteDoc(doc(db, 'orders', orderToDelete.id));
+      await deleteDoc(doc(db, "orders", orderToDelete.id));
       toast({
         title: "🗑️ تم حذف الطلب",
         description: `تم حذف الطلب رقم ${orderToDelete.id} بنجاح.`,
-        className: "bg-red-600 text-white"
+        className: "bg-red-600 text-white",
       });
       setOrderToDelete(null);
       setIsDeleteAlertOpen(false);
+      setIsViewModalOpen(false);
+      setSelectedOrder(null);
     } catch (err) {
       toast({ title: "❌ خطأ في حذف الطلب", description: err.message, variant: "destructive" });
       setOrderToDelete(null);
@@ -135,21 +235,22 @@ const OrderDetailsView = () => {
     }
   };
 
-  // تصفية الطلبات حسب البحث (رقم الطلب أو اسم العميل)
+  // تصفية الطلبات حسب البحث مع debounce
   const filteredOrders = useMemo(() => {
-    if (!searchTerm.trim()) return orders;
+    if (!debouncedSearch) return orders;
 
-    const lowerSearch = searchTerm.trim().toLowerCase();
-    return orders.filter(order => {
-      const idMatch = order.id.toLowerCase().includes(lowerSearch);
-      const nameMatch = order.customerInfo?.name?.toLowerCase().includes(lowerSearch);
+    return orders.filter((order) => {
+      const idMatch = order.id.toLowerCase().includes(debouncedSearch);
+      const nameMatch = order.customerInfo?.name
+        ?.toLowerCase()
+        .includes(debouncedSearch);
       return idMatch || nameMatch;
     });
-  }, [searchTerm, orders]);
+  }, [debouncedSearch, orders]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-10">
+      <div className="flex items-center justify-center p-10" aria-live="polite">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
         <p className="ml-4 text-lg text-muted-foreground">جاري تحميل الطلبات...</p>
       </div>
@@ -166,7 +267,12 @@ const OrderDetailsView = () => {
   }
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }} className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="space-y-6"
+    >
       <h2 className="text-2xl font-semibold text-primary flex items-center">
         <ListOrderedIcon className="ml-2 h-6 w-6" />
         عرض وإدارة الطلبات
@@ -179,14 +285,17 @@ const OrderDetailsView = () => {
           placeholder="ابحث برقم الطلب أو اسم العميل..."
           className="w-full md:w-96 p-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={handleSearchChange}
           dir="rtl"
           aria-label="بحث عن الطلبات"
+          autoComplete="off"
         />
       </div>
 
       {filteredOrders.length === 0 ? (
-        <p className="text-muted-foreground text-center py-8">لا توجد طلبات تطابق البحث.</p>
+        <p className="text-muted-foreground text-center py-8">
+          لا توجد طلبات تطابق البحث.
+        </p>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-border shadow-sm bg-card">
           <Table>
@@ -210,35 +319,37 @@ const OrderDetailsView = () => {
                   exit={{ opacity: 0 }}
                   className="hover:bg-muted/30 transition-colors"
                 >
-                  <TableCell className="font-medium text-primary truncate max-w-[100px]">{order.id}</TableCell>
-                  <TableCell>{order.customerInfo?.name || 'غير متوفر'}</TableCell>
-                  <TableCell>{order.createdAt ? new Date(order.createdAt).toLocaleDateString('ar-EG') : 'غير متوفر'}</TableCell>
-                  <TableCell>{(order.totalAmount || 0).toLocaleString('ar-EG')}</TableCell>
-                  <TableCell>
+                  <TableCell className="font-medium text-right">{order.id}</TableCell>
+                  <TableCell className="text-right">{order.customerInfo?.name || "غير معروف"}</TableCell>
+                  <TableCell className="text-right">
+                    {order.createdAt.toLocaleDateString("ar-EG")}
+                  </TableCell>
+                  <TableCell className="text-right">{order.totalPrice?.toFixed(2) || "0.00"}</TableCell>
+                  <TableCell className="text-right">
                     <Select
-                      value={order.status}
-                      onValueChange={(newStatus) => handleStatusChange(order.id, newStatus)}
+                      defaultValue={order.status}
+                      onValueChange={(value) => handleStatusChange(order.id, value)}
                     >
-                      <SelectTrigger className={`w-[150px] text-xs h-9 ${getStatusStyles(order.status)}`}>
-                        <SelectValue />
+                      <SelectTrigger className="w-40">
+                        <SelectValue>
+                          {
+                            statusOptions.find((s) => s.value === order.status)
+                              ?.label || order.status
+                          }
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        {statusOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value} className="flex items-center gap-2">
-                            {option.icon} {option.label}
+                        {statusOptions.map(({ value, label, icon }) => (
+                          <SelectItem key={value} value={value} className="flex items-center space-x-2 rtl:space-x-reverse">
+                            {icon}
+                            <span>{label}</span>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </TableCell>
-                  <TableCell className="text-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleViewOrder(order)}
-                      title="عرض الطلب"
-                      aria-label={`عرض تفاصيل الطلب رقم ${order.id}`}
-                    >
+                  <TableCell className="text-center space-x-1 rtl:space-x-reverse">
+                    <Button variant="outline" size="sm" onClick={() => handleViewOrder(order)} title="عرض الطلب">
                       <Eye className="h-4 w-4" />
                     </Button>
                     <Button
@@ -246,7 +357,6 @@ const OrderDetailsView = () => {
                       size="sm"
                       onClick={() => confirmDeleteOrder(order)}
                       title="حذف الطلب"
-                      aria-label={`حذف الطلب رقم ${order.id}`}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -258,32 +368,54 @@ const OrderDetailsView = () => {
         </div>
       )}
 
-      {/* نافذة عرض تفاصيل الطلب */}
+      {/* عرض تفاصيل الطلب - مودال */}
       <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-        <DialogContent dir="rtl" className="max-w-2xl">
+        <DialogContent dir="rtl" className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>تفاصيل الطلب رقم {selectedOrder?.id}</DialogTitle>
+            <DialogTitle>تفاصيل الطلب</DialogTitle>
             <DialogDescription>
               {selectedOrder ? (
-                <>
-                  <p><strong>اسم العميل:</strong> {selectedOrder.customerInfo?.name || 'غير متوفر'}</p>
-                  <p><strong>البريد الإلكتروني:</strong> {selectedOrder.customerInfo?.email || 'غير متوفر'}</p>
-                  <p><strong>الهاتف:</strong> {selectedOrder.customerInfo?.phone || 'غير متوفر'}</p>
-                  <p><strong>تاريخ الطلب:</strong> {new Date(selectedOrder.createdAt).toLocaleString('ar-EG')}</p>
-                  <p><strong>الإجمالي:</strong> {(selectedOrder.totalAmount || 0).toLocaleString('ar-EG')} ج.م</p>
-                  <p><strong>العنوان:</strong> {selectedOrder.shippingAddress || 'غير متوفر'}</p>
-                  <hr className="my-3" />
-                  <h3 className="font-semibold mb-2">المنتجات:</h3>
-                  <ul className="list-disc list-inside max-h-48 overflow-auto">
-                    {selectedOrder.products?.map((prod, idx) => (
+                <div className="space-y-4">
+                  <p>
+                    <strong>رقم الطلب:</strong> {selectedOrder.id}
+                  </p>
+                  <p>
+                    <strong>اسم العميل:</strong> {selectedOrder.customerInfo?.name}
+                  </p>
+                  <p>
+                    <strong>الهاتف:</strong> {selectedOrder.customerInfo?.phone}
+                  </p>
+                  <p>
+                    <strong>العنوان:</strong> {selectedOrder.customerInfo?.address}
+                  </p>
+                  <p>
+                    <strong>تاريخ الطلب:</strong>{" "}
+                    {selectedOrder.createdAt.toLocaleString("ar-EG")}
+                  </p>
+                  <p>
+                    <strong>حالة الطلب:</strong>{" "}
+                    {
+                      statusOptions.find(
+                        (s) => s.value === selectedOrder.status
+                      )?.label
+                    }
+                  </p>
+                  <p>
+                    <strong>المنتجات:</strong>
+                  </p>
+                  <ul className="list-disc list-inside max-h-64 overflow-auto border p-2 rounded">
+                    {selectedOrder.items?.map((item, idx) => (
                       <li key={idx}>
-                        {prod.name} - الكمية: {prod.quantity} - السعر: {(prod.price || 0).toLocaleString('ar-EG')} ج.م
+                        {item.name} - الكمية: {item.quantity} - السعر: {item.price} ج.م
                       </li>
-                    )) || 'لا توجد منتجات'}
+                    ))}
                   </ul>
-                </>
+                  <p className="text-lg font-semibold">
+                    الإجمالي: {selectedOrder.totalPrice?.toFixed(2)} ج.م
+                  </p>
+                </div>
               ) : (
-                <p>لم يتم تحديد طلب.</p>
+                <p>لا توجد تفاصيل لعرضها.</p>
               )}
             </DialogDescription>
           </DialogHeader>
@@ -293,19 +425,22 @@ const OrderDetailsView = () => {
         </DialogContent>
       </Dialog>
 
-      {/* نافذة تأكيد الحذف */}
-      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+      {/* تأكيد حذف الطلب */}
+      <AlertDialog
+        open={isDeleteAlertOpen}
+        onOpenChange={setIsDeleteAlertOpen}
+      >
         <AlertDialogContent dir="rtl">
           <AlertDialogHeader>
             <AlertDialogTitle>هل أنت متأكد من حذف الطلب؟</AlertDialogTitle>
             <AlertDialogDescription>
-              حذف الطلب رقم {orderToDelete?.id} سيؤدي إلى إزالة كل بياناته نهائياً ولا يمكن التراجع عن ذلك.
+              حذف الطلب سيؤدي إلى إزالة جميع بياناته بشكل نهائي.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setIsDeleteAlertOpen(false)}>إلغاء</AlertDialogCancel>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
             <AlertDialogAction onClick={executeDeleteOrder} className="bg-red-600 hover:bg-red-700">
-              حذف الطلب
+              حذف نهائي
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
