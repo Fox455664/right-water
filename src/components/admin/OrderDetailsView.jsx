@@ -123,9 +123,10 @@ if (!orderToDelete) return;
 try {
 await deleteDoc(doc(db, 'orders', orderToDelete.id));
 toast({
-title: "🗑️ تم حذف الطلب",
-description: تم حذف الطلب رقم ${orderToDelete.id} بنجاح.,
-className: "bg-red-600 text-white"
+toast({
+  title: "🗑️ تم حذف الطلب",
+  description: `تم حذف الطلب رقم ${orderToDelete.id} بنجاح.`,
+  className: "bg-red-600 text-white"
 });
 setOrderToDelete(null);
 setIsDeleteAlertOpen(false);
