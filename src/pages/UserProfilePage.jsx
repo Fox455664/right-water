@@ -24,7 +24,7 @@ import {
   where,
   orderBy,
   onSnapshot,
-} from '@/lib/firebase';
+} from '@/firebase';
 
 const statusOptions = [
   {
