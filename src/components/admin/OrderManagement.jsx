@@ -38,13 +38,23 @@ const getStatusStyles = (status) => {
   }
 };
 
+const calculateStats = (orders) => {
+  const totalRevenue = orders
+    .filter(o => o.status !== 'cancelled')
+    .reduce((acc, o) => acc + (o.total || 0), 0);
+
+  const totalOrders = orders.filter(o => o.status !== 'cancelled').length;
+  const cancelledOrders = orders.filter(o => o.status === 'cancelled').length;
+
+  return { totalRevenue, totalOrders, cancelledOrders };
+};
+
 const OrderManagement = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { toast } = useToast();
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [stats, setStats] = useState({ totalRevenue: 0, totalOrders: 0, cancelledOrders: 0 });
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -63,6 +73,7 @@ const OrderManagement = () => {
           };
         });
         setOrders(orderList);
+        setStats(calculateStats(orderList));
       } catch (err) {
         console.error("Error fetching orders: ", err);
         setError("حدث خطأ أثناء تحميل الطلبات.");
@@ -77,11 +88,15 @@ const OrderManagement = () => {
     try {
       const orderRef = doc(db, 'orders', orderId);
       await updateDoc(orderRef, { status: newStatus });
-      setOrders(prevOrders =>
-        prevOrders.map(order =>
+
+      setOrders(prevOrders => {
+        const updatedOrders = prevOrders.map(order =>
           order.id === orderId ? { ...order, status: newStatus } : order
-        )
-      );
+        );
+        setStats(calculateStats(updatedOrders));
+        return updatedOrders;
+      });
+
       toast({
         title: "✅ تم تحديث حالة الطلب",
         description: `تم تغيير حالة الطلب ${orderId} إلى ${statusOptions.find(s => s.value === newStatus)?.label || newStatus}.`,
@@ -99,7 +114,11 @@ const OrderManagement = () => {
   const handleDeleteOrder = async (orderId) => {
     try {
       await deleteDoc(doc(db, 'orders', orderId));
-      setOrders(prevOrders => prevOrders.filter(order => order.id !== orderId));
+      setOrders(prevOrders => {
+        const filtered = prevOrders.filter(order => order.id !== orderId);
+        setStats(calculateStats(filtered));
+        return filtered;
+      });
       toast({
         title: "🗑️ تم حذف الطلب",
         description: `تم حذف الطلب ${orderId} بنجاح.`,
@@ -112,11 +131,6 @@ const OrderManagement = () => {
         className: "bg-red-500 text-white"
       });
     }
-  };
-
-  const handleViewOrder = (order) => {
-    setSelectedOrder(order);
-    setIsViewModalOpen(true);
   };
 
   if (loading) {
@@ -139,13 +153,25 @@ const OrderManagement = () => {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="space-y-6"
-    >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }} className="space-y-6">
       <h2 className="text-2xl font-semibold text-primary">إدارة الطلبات</h2>
+
+      {/* إحصائيات */}
+      <div className="flex justify-around bg-gray-100 p-4 rounded-md mb-6 text-right">
+        <div>
+          <h3 className="text-lg font-semibold">إجمالي الإيرادات (ج.م)</h3>
+          <p className="text-xl text-green-600">{stats.totalRevenue.toLocaleString('ar-EG')}</p>
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold">إجمالي الطلبات</h3>
+          <p className="text-xl">{stats.totalOrders}</p>
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold">طلبات ملغية</h3>
+          <p className="text-xl text-red-600">{stats.cancelledOrders}</p>
+        </div>
+      </div>
+
       {orders.length === 0 ? (
         <p className="text-muted-foreground text-center py-8">لا توجد طلبات لعرضها حالياً.</p>
       ) : (
