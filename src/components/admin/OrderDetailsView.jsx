@@ -99,9 +99,9 @@ try {
 const orderRef = doc(db, 'orders', orderId);
 await updateDoc(orderRef, { status: newStatus });
 toast({
-title: "✅ تم تحديث حالة الطلب",
-description: تم تغيير حالة الطلب إلى ${statusOptions.find(s => s.value === newStatus)?.label || newStatus}.,
-className: "bg-green-500 text-white"
+  title: "✅ تم تحديث حالة الطلب",
+  description: `تم تغيير حالة الطلب إلى ${statusOptions.find(s => s.value === newStatus)?.label || newStatus}.`,
+  className: "bg-green-500 text-white"
 });
 } catch (err) {
 toast({ title: "❌ خطأ في تحديث الحالة", description: err.message, variant: "destructive" });
