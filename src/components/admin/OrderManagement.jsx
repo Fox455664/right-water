@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { motion } from 'framer-motion';
 import { Trash2, Eye } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { db } from '@/lib/firebase';
+import { db } from '@/firebase';
 import { collection, getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 
 export default function OrderManagement() {
