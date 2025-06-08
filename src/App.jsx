@@ -81,7 +81,7 @@ function App() {
 
               {/* لوحة تحكم المسؤول مع المسارات الفرعية داخل AdminDashboardPage */}
               <Route 
-                path="admin" 
+                path="AdminDashboard" 
                 element={
                   <ProtectedRoute adminOnly={true}>
                     <AdminDashboardPage />
