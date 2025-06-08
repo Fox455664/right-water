@@ -1,33 +1,4 @@
-"use client";
-
-import React, { useState, useEffect, useMemo, useCallback } from "react";
-import {
-  db,
-  deleteDoc,
-  doc,
-  updateDoc,
-  collection,
-  onSnapshot,
-  query,
-  orderBy,
-} from "@/firebase";
-
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -35,7 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog.jsx";
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,69 +17,31 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Eye,
+  Trash2,
+  Loader2,
+  Truck,
   PackageCheck,
   PackageX,
-  Truck,
-  Loader2,
-  AlertTriangle,
-  UserCircle,
-  CalendarDays,
-  ListOrdered as ListOrderedIcon,
-  Trash2,
-  Clock, // أيقونة ساعة مناسبة للتأجيل
+  Clock,
 } from "lucide-react";
-import { motion } from "framer-motion";
-import { useToast } from "@/components/ui/use-toast";
-
-// debounce helper function
-function debounce(fn, delay) {
-  let timeoutId;
-  return (...args) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => fn(...args), delay);
-  };
-}
 
 const statusOptions = [
-  {
-    value: "pending",
-    label: "قيد الانتظار",
-    icon: <Loader2 className="h-4 w-4 text-yellow-500" />,
-  },
-  {
-    value: "processing",
-    label: "قيد المعالجة",
-    icon: <Truck className="h-4 w-4 text-blue-500" />,
-  },
-  {
-    value: "shipped",
-    label: "تم الشحن",
-    icon: <Truck className="h-4 w-4 text-sky-500" />,
-  },
-  {
-    value: "delayed", // الحالة الجديدة
-    label: "تأجيل",
-    icon: <Clock className="h-4 w-4 text-orange-500" />,
-  },
-  {
-    value: "delivered",
-    label: "تم التسليم",
-    icon: <PackageCheck className="h-4 w-4 text-green-500" />,
-  },
-  {
-    value: "cancelled",
-    label: "ملغي",
-    icon: <PackageX className="h-4 w-4 text-red-500" />,
-  },
+  { value: "pending", label: "قيد الانتظار", icon: <Loader2 className="h-4 w-4 text-yellow-500" /> },
+  { value: "processing", label: "قيد المعالجة", icon: <Truck className="h-4 w-4 text-blue-500" /> },
+  { value: "shipped", label: "تم الشحن", icon: <Truck className="h-4 w-4 text-sky-500" /> },
+  { value: "delayed", label: "مؤجل", icon: <Clock className="h-4 w-4 text-purple-600" /> },  // حالة جديدة
+  { value: "delivered", label: "تم التسليم", icon: <PackageCheck className="h-4 w-4 text-green-500" /> },
+  { value: "cancelled", label: "ملغي", icon: <PackageX className="h-4 w-4 text-red-500" /> },
 ];
 
 const getStatusStyles = (status) => {
@@ -119,8 +52,8 @@ const getStatusStyles = (status) => {
       return "bg-blue-100 text-blue-700 border-blue-300";
     case "shipped":
       return "bg-sky-100 text-sky-700 border-sky-300";
-    case "delayed": // ستايل جديد لحالة التأجيل
-      return "bg-orange-100 text-orange-700 border-orange-300";
+    case "delayed":
+      return "bg-purple-100 text-purple-700 border-purple-300";
     case "delivered":
       return "bg-green-100 text-green-700 border-green-300";
     case "cancelled":
@@ -130,323 +63,384 @@ const getStatusStyles = (status) => {
   }
 };
 
-const OrderDetailsView = () => {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const { toast } = useToast();
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [orderToDelete, setOrderToDelete] = useState(null);
-  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+export default function OrdersManagement({ ordersData }) {
+  // ordersData: array of orders objects passed as prop or fetched from API
+  const [orders, setOrders] = useState(ordersData || []);
   const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
-  useEffect(() => {
-    const ordersQuery = query(
-      collection(db, "orders"),
-      orderBy("createdAt", "desc")
+  // For Modals
+  const [viewOrder, setViewOrder] = useState(null);
+  const [isViewOpen, setIsViewOpen] = useState(false);
+
+  const [deleteOrder, setDeleteOrder] = useState(null);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+
+  // Handlers
+  const handleStatusChange = (id, newStatus) => {
+    setOrders((prev) =>
+      prev.map((order) =>
+        order.id === id ? { ...order, status: newStatus } : order
+      )
     );
+  };
 
-    const unsubscribe = onSnapshot(
-      ordersQuery,
-      (snapshot) => {
-        const fetchedOrders = snapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data,
-            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
-          };
-        });
-        setOrders(fetchedOrders);
-        setLoading(false);
-        setError(null);
-      },
-      (err) => {
-        console.error("Error fetching orders: ", err);
-        setError("حدث خطأ أثناء تحميل الطلبات من قاعدة البيانات.");
-        setLoading(false);
-      }
-    );
+  const handleViewOpen = (order) => {
+    setViewOrder(order);
+    setIsViewOpen(true);
+  };
+  const handleViewClose = () => {
+    setIsViewOpen(false);
+    setViewOrder(null);
+  };
 
-    return () => unsubscribe();
-  }, []);
+  const handleDeleteOpen = (order) => {
+    setDeleteOrder(order);
+    setIsDeleteOpen(true);
+  };
+  const handleDeleteClose = () => {
+    setIsDeleteOpen(false);
+    setDeleteOrder(null);
+  };
+  const handleDeleteConfirm = () => {
+    if (!deleteOrder) return;
+    setOrders((prev) => prev.filter((order) => order.id !== deleteOrder.id));
+    handleDeleteClose();
+  };
 
-  // debounce تحديث البحث
-  const debouncedSetSearch = useCallback(
-    debounce((value) => {
-      setDebouncedSearch(value.trim().toLowerCase());
-    }, 300),
-    []
+  // Filter & Search & Pagination logic
+  const filteredOrders = orders.filter((order) => {
+    const matchesSearch =
+      order.customerInfo?.name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) || false;
+    const matchesStatus = filterStatus ? order.status === filterStatus : true;
+    return matchesSearch && matchesStatus;
+  });
+
+  const totalPages = Math.ceil(filteredOrders.length / pageSize);
+  const paginatedOrders = filteredOrders.slice(
+    (page - 1) * pageSize,
+    page * pageSize
   );
 
-  const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
-    debouncedSetSearch(e.target.value);
+  // Pagination controls
+  const gotoPage = (p) => {
+    if (p < 1) p = 1;
+    else if (p > totalPages) p = totalPages;
+    setPage(p);
   };
-
-  const handleStatusChange = async (orderId, newStatus) => {
-    const order = orders.find((o) => o.id === orderId);
-    if (order?.status === newStatus) return; // لا يحدث إذا نفس الحالة
-
-    try {
-      const orderRef = doc(db, "orders", orderId);
-      await updateDoc(orderRef, { status: newStatus });
-      toast({
-        title: "✅ تم تحديث حالة الطلب",
-        description: `تم تغيير حالة الطلب إلى ${
-          statusOptions.find((s) => s.value === newStatus)?.label || newStatus
-        }.`,
-        className: "bg-green-500 text-white",
-      });
-    } catch (err) {
-      toast({ title: "❌ خطأ في تحديث الحالة", description: err.message, variant: "destructive" });
-    }
-  };
-
-  const handleViewOrder = (order) => {
-    setSelectedOrder(order);
-    setIsViewModalOpen(true);
-  };
-
-  const confirmDeleteOrder = (order) => {
-    setOrderToDelete(order);
-    setIsDeleteAlertOpen(true);
-  };
-
-  const executeDeleteOrder = async () => {
-    if (!orderToDelete) return;
-    try {
-      await deleteDoc(doc(db, "orders", orderToDelete.id));
-      toast({
-        title: "🗑️ تم حذف الطلب",
-        description: `تم حذف الطلب رقم ${orderToDelete.id} بنجاح.`,
-        className: "bg-red-600 text-white",
-      });
-      setOrderToDelete(null);
-      setIsDeleteAlertOpen(false);
-      setIsViewModalOpen(false);
-      setSelectedOrder(null);
-    } catch (err) {
-      toast({ title: "❌ خطأ في حذف الطلب", description: err.message, variant: "destructive" });
-      setOrderToDelete(null);
-      setIsDeleteAlertOpen(false);
-    }
-  };
-
-  // تصفية الطلبات حسب البحث مع debounce
-  const filteredOrders = useMemo(() => {
-    if (!debouncedSearch) return orders;
-
-    return orders.filter((order) => {
-      const idMatch = order.id.toLowerCase().includes(debouncedSearch);
-      const nameMatch = order.customerInfo?.name
-        ?.toLowerCase()
-        .includes(debouncedSearch);
-      return idMatch || nameMatch;
-    });
-  }, [debouncedSearch, orders]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-10" aria-live="polite">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="ml-4 text-lg text-muted-foreground">جاري تحميل الطلبات...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-10 text-center">
-        <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
-        <p className="text-lg text-destructive">{error}</p>
-      </div>
-    );
-  }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="space-y-6"
-    >
-      <h2 className="text-2xl font-semibold text-primary flex items-center">
-        <ListOrderedIcon className="ml-2 h-6 w-6" />
-        عرض وإدارة الطلبات
-      </h2>
+    <div className="p-4 text-right max-w-full overflow-x-auto">
+      <h2 className="text-2xl mb-4 font-semibold text-primary">إدارة الطلبات</h2>
 
-      {/* حقل البحث */}
-      <div className="mb-4">
+      {/* بحث و فلترة */}
+      <div className="flex flex-col sm:flex-row gap-3 sm:items-center mb-6">
         <input
-          type="text"
-          placeholder="ابحث برقم الطلب أو اسم العميل..."
-          className="w-full md:w-96 p-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+          type="search"
+          placeholder="ابحث باسم العميل..."
+          className="input input-bordered w-full sm:w-64"
           value={searchTerm}
-          onChange={handleSearchChange}
-          dir="rtl"
-          aria-label="بحث عن الطلبات"
-          autoComplete="off"
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setPage(1);
+          }}
         />
+        <Select
+          value={filterStatus}
+          onValueChange={(val) => {
+            setFilterStatus(val);
+            setPage(1);
+          }}
+        >
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="فلتر حسب الحالة" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">الكل</SelectItem>
+            {statusOptions.map(({ value, label }) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      {filteredOrders.length === 0 ? (
-        <p className="text-muted-foreground text-center py-8">
-          لا توجد طلبات تطابق البحث.
-        </p>
-      ) : (
-        <div className="overflow-x-auto rounded-lg border border-border shadow-sm bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="text-right">رقم الطلب</TableHead>
-                <TableHead className="text-right">اسم العميل</TableHead>
-                <TableHead className="text-right">التاريخ</TableHead>
-                <TableHead className="text-right">الإجمالي (ج.م)</TableHead>
-                <TableHead className="text-right">الحالة</TableHead>
-                <TableHead className="text-center">الإجراءات</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredOrders.map((order) => (
-                <motion.tr
-                  key={order.id}
-                  layout
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="hover:bg-muted/30 transition-colors"
-                >
-                  <TableCell className="font-medium text-right">{order.id}</TableCell>
-                  <TableCell className="text-right">{order.customerInfo?.name || "غير معروف"}</TableCell>
-                  <TableCell className="text-right">
-                    {order.createdAt.toLocaleDateString("ar-EG")}
-                  </TableCell>
-                  <TableCell className="text-right">{order.totalPrice?.toFixed(2) || "0.00"}</TableCell>
-                  <TableCell className="text-right">
-                    <Select
-                      defaultValue={order.status}
-                      onValueChange={(value) => handleStatusChange(order.id, value)}
+      {/* جدول الطلبات */}
+      <table className="w-full border-collapse border border-gray-300 text-sm">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="p-2 border border-gray-300">رقم الطلب</th>
+            <th className="p-2 border border-gray-300">اسم العميل</th>
+            <th className="p-2 border border-gray-300">تاريخ الطلب</th>
+            <th className="p-2 border border-gray-300">الإجمالي</th>
+            <th className="p-2 border border-gray-300">الحالة</th>
+            <th className="p-2 border border-gray-300 text-center">إجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          {paginatedOrders.length > 0 ? (
+            paginatedOrders.map((order) => (
+              <tr
+                key={order.id}
+                className="hover:bg-gray-50 transition-colors"
+              >
+                <td className="p-2 border border-gray-300 font-mono truncate max-w-[110px]">
+                  {order.id}
+                </td>
+                <td className="p-2 border border-gray-300">
+                  {order.customerInfo?.name || "-"}
+                </td>
+                <td className="p-2 border border-gray-300">
+                  {order.createdAt
+                    ? new Date(order.createdAt).toLocaleDateString("ar-EG")
+                    : "-"}
+                </td>
+                <td className="p-2 border border-gray-300">
+                  {(order.totalAmount || 0).toLocaleString("ar-EG", {
+                    style: "currency",
+                    currency: "EGP",
+                  })}
+                </td>
+                <td className="p-2 border border-gray-300">
+                  <Select
+                    value={order.status}
+                    onValueChange={(val) => handleStatusChange(order.id, val)}
+                  >
+                    <SelectTrigger
+                      className={`w-[150px] text-xs h-9 ${getStatusStyles(
+                        order.status
+                      )}`}
                     >
-                      <SelectTrigger className="w-40">
-                        <SelectValue>
-                          {
-                            statusOptions.find((s) => s.value === order.status)
-                              ?.label || order.status
-                          }
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {statusOptions.map(({ value, label, icon }) => (
-                          <SelectItem key={value} value={value} className="flex items-center space-x-2 rtl:space-x-reverse">
+                      <div className="flex items-center">
+                        {
+                          statusOptions.find((s) => s.value === order.status)
+                            ?.icon
+                        }
+                        <span className="mr-2">
+                          <SelectValue />
+                        </span>
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusOptions.map(({ value, label, icon }) => (
+                        <SelectItem key={value} value={value} className="text-xs">
+                          <div className="flex items-center">
                             {icon}
-                            <span>{label}</span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell className="text-center space-x-1 rtl:space-x-reverse">
-                    <Button variant="outline" size="sm" onClick={() => handleViewOrder(order)} title="عرض الطلب">
-                      <Eye className="h-4 w-4" />
+                            <span className="mr-2">{label}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </td>
+                <td className="p-2 border border-gray-300 text-center">
+                  <div className="flex justify-center items-center space-x-1 space-x-reverse">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-blue-500 hover:text-blue-700"
+                      onClick={() => handleViewOpen(order)}
+                      aria-label="عرض الطلب"
+                    >
+                      <Eye className="h-5 w-5" />
                     </Button>
                     <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => confirmDeleteOrder(order)}
-                      title="حذف الطلب"
+                      variant="ghost"
+                      size="icon"
+                      className="text-red-500 hover:text-red-700"
+                      onClick={() => handleDeleteOpen(order)}
+                      aria-label="حذف الطلب"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-5 w-5" />
                     </Button>
-                  </TableCell>
-                </motion.tr>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+                  </div>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td
+                colSpan={6}
+                className="p-4 text-center text-muted-foreground"
+              >
+                لا توجد طلبات للعرض
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
 
-      {/* عرض تفاصيل الطلب - مودال */}
-      <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-        <DialogContent dir="rtl" className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>تفاصيل الطلب</DialogTitle>
+      {/* Pagination */}
+      <div className="flex justify-center items-center mt-4 space-x-4 space-x-reverse">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={page === 1}
+          onClick={() => gotoPage(page - 1)}
+        >
+          السابق
+        </Button>
+        <span>
+          الصفحة {page} من {totalPages || 1}
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={page === totalPages || totalPages === 0}
+          onClick={() => gotoPage(page + 1)}
+        >
+          التالي
+        </Button>
+      </div>
+
+      {/* تفاصيل الطلب - مودال */}
+      <Dialog open={isViewOpen} onOpenChange={handleViewClose}>
+        <DialogContent className="max-w-lg text-right sm:max-w-xl md:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-2xl text-primary">
+              تفاصيل الطلب:{" "}
+              <span className="font-mono text-sm">{viewOrder?.id}</span>
+            </DialogTitle>
             <DialogDescription>
-              {selectedOrder ? (
-                <div className="space-y-4">
-                  <p>
-                    <strong>رقم الطلب:</strong> {selectedOrder.id}
-                  </p>
-                  <p>
-                    <strong>اسم العميل:</strong> {selectedOrder.customerInfo?.name}
-                  </p>
-                  <p>
-                    <strong>الهاتف:</strong> {selectedOrder.customerInfo?.phone}
-                  </p>
-                  <p>
-                    <strong>العنوان:</strong> {selectedOrder.customerInfo?.address}
-                  </p>
-                  <p>
-                    <strong>تاريخ الطلب:</strong>{" "}
-                    {selectedOrder.createdAt.toLocaleString("ar-EG")}
-                  </p>
-                  <p>
-                    <strong>حالة الطلب:</strong>{" "}
-                    {
-                      statusOptions.find(
-                        (s) => s.value === selectedOrder.status
-                      )?.label
-                    }
-                  </p>
-                  <p>
-                    <strong>المنتجات:</strong>
-                  </p>
-                  <ul className="list-disc list-inside max-h-64 overflow-auto border p-2 rounded">
-                    {selectedOrder.items?.map((item, idx) => (
-                      <li key={idx}>
-                        {item.name} - الكمية: {item.quantity} - السعر: {item.price} ج.م
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="text-lg font-semibold">
-                    الإجمالي: {selectedOrder.totalPrice?.toFixed(2)} ج.م
-                  </p>
-                </div>
-              ) : (
-                <p>لا توجد تفاصيل لعرضها.</p>
-              )}
+              <span
+                className={`inline-block px-2 py-1 rounded-md text-xs ${getStatusStyles(
+                  viewOrder?.status
+                )}`}
+              >
+                {statusOptions.find((s) => s.value === viewOrder?.status)?.label ||
+                  viewOrder?.status}
+              </span>
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button onClick={() => setIsViewModalOpen(false)}>إغلاق</Button>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="glassmorphism-card p-4 rounded border border-gray-300 bg-white shadow-sm">
+              <h3 className="text-lg text-primary flex items-center mb-2">
+                <Eye className="ml-2" />
+                معلومات العميل
+              </h3>
+              <p>
+                <strong>الاسم:</strong> {viewOrder?.customerInfo?.name || "-"}
+              </p>
+              <p>
+                <strong>البريد:</strong> {viewOrder?.customerInfo?.email || "-"}
+              </p>
+              <p>
+                <strong>الهاتف:</strong> {viewOrder?.customerInfo?.phone || "-"}
+              </p>
+              <p>
+                <strong>العنوان:</strong>{" "}
+                {viewOrder?.customerInfo
+                  ? `${viewOrder.customerInfo.address || ""}, ${viewOrder.customerInfo.city || ""
+                    }, ${viewOrder.customerInfo.country || ""}`
+                  : "-"}
+              </p>
+            </div>
+            <div className="glassmorphism-card p-4 rounded border border-gray-300 bg-white shadow-sm">
+              <h3 className="text-lg text-primary flex items-center mb-2">
+                <Truck className="ml-2" />
+                تفاصيل الطلب
+              </h3>
+              <p>
+                <strong>تاريخ الطلب:</strong>{" "}
+                {viewOrder?.createdAt
+                  ? new Date(viewOrder.createdAt).toLocaleString("ar-EG", {
+                    dateStyle: "full",
+                    timeStyle: "short",
+                  })
+                  : "-"}
+              </p>
+              <p>
+                <strong>طريقة الدفع:</strong>{" "}
+                {viewOrder?.paymentMethod === "cod"
+                  ? "الدفع عند الاستلام"
+                  : viewOrder?.paymentMethod || "-"}
+              </p>
+              <p>
+                <strong>الإجمالي الكلي:</strong>{" "}
+                <span className="font-bold text-green-600">
+                  {(viewOrder?.totalAmount || 0).toLocaleString("ar-EG", {
+                    style: "currency",
+                    currency: "EGP",
+                  })}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <h4 className="text-lg font-semibold mb-2 text-primary flex items-center">
+              <PackageCheck className="ml-2" />
+              المنتجات المطلوبة:
+            </h4>
+            <div className="max-h-60 overflow-y-auto border rounded-md p-2 bg-muted/20">
+              {viewOrder?.items && viewOrder.items.length > 0 ? (
+                <ul className="space-y-2">
+                  {viewOrder.items.map((item, index) => (
+                    <li
+                      key={index}
+                      className="p-2 border-b last:border-b-0 flex justify-between items-center text-sm bg-background/50 rounded"
+                    >
+                      <div>
+                        <p className="font-semibold text-foreground">
+                          {item.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          الكمية: {item.quantity} | السعر:{" "}
+                          {(item.price || 0).toLocaleString("ar-EG", {
+                            style: "currency",
+                            currency: "EGP",
+                          })}
+                        </p>
+                      </div>
+                      <p className="font-semibold text-primary">
+                        {((item.price || 0) * item.quantity).toLocaleString(
+                          "ar-EG",
+                          { style: "currency", currency: "EGP" }
+                        )}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-muted-foreground text-center p-4">
+                  لا توجد منتجات في هذا الطلب.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="mt-6">
+            <Button variant="outline" onClick={handleViewClose}>
+              إغلاق
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* تأكيد حذف الطلب */}
-      <AlertDialog
-        open={isDeleteAlertOpen}
-        onOpenChange={setIsDeleteAlertOpen}
-      >
-        <AlertDialogContent dir="rtl">
+      {/* تأكيد الحذف */}
+      <AlertDialog open={isDeleteOpen} onOpenChange={handleDeleteClose}>
+        <AlertDialogContent className="text-right">
           <AlertDialogHeader>
-            <AlertDialogTitle>هل أنت متأكد من حذف الطلب؟</AlertDialogTitle>
+            <AlertDialogTitle>هل أنت متأكد من حذف هذا الطلب؟</AlertDialogTitle>
             <AlertDialogDescription>
-              حذف الطلب سيؤدي إلى إزالة جميع بياناته بشكل نهائي.
+              هذا الإجراء لا يمكن التراجع عنه. سيتم حذف الطلب رقم (
+              {deleteOrder?.id}) بشكل دائم من قاعدة البيانات.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
-            <AlertDialogAction onClick={executeDeleteOrder} className="bg-red-600 hover:bg-red-700">
-              حذف نهائي
+          <AlertDialogFooter className="flex-row-reverse space-x-2 space-x-reverse">
+            <AlertDialogAction onClick={handleDeleteConfirm}>
+              حذف
             </AlertDialogAction>
+            <AlertDialogCancel onClick={handleDeleteClose}>إلغاء</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </motion.div>
+    </div>
   );
-};
-
-export default OrderDetailsView;
+}
