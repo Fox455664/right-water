@@ -275,7 +275,7 @@ try {
         </motion.form>
 
         {/* ملخص الطلب */}
-        <motion.div 
+                <motion.div 
           initial={{ opacity: 0, x: 20 }} 
           animate={{ opacity: 1, x: 0 }} 
           className="sticky top-24"
@@ -284,20 +284,44 @@ try {
             <CardHeader>
               <CardTitle className="text-center text-lg font-semibold text-primary">ملخص الطلب</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
-              {cartItems.map(item => (
-                <div key={item.id} className="flex justify-between items-center border-b pb-2">
-                  <div className="text-sm">
-                    <p className="font-semibold">{item.name}</p>
-                    <p className="text-muted-foreground">الكمية: {item.quantity}</p>
+            <CardContent className="space-y-4">
+              {/* قائمة المنتجات */}
+              <div className="space-y-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                {cartItems.map(item => (
+                  <div key={item.id} className="flex justify-between items-center border-b pb-2 last:border-b-0">
+                    <div className="text-sm">
+                      <p className="font-semibold">{item.name}</p>
+                      <p className="text-muted-foreground">الكمية: {item.quantity}</p>
+                    </div>
+                    <p className="text-sm font-medium">
+                      {(item.price * item.quantity).toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}
+                    </p>
                   </div>
-                  <p className="text-sm font-medium">
-                    {(item.price * item.quantity).toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}
-                  </p>
+                ))}
+              </div>
+              
+              {/* ملخص الأسعار */}
+              <div className="pt-4 border-t space-y-2 text-sm">
+                {/* المجموع الفرعي */}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">المجموع الفرعي</span>
+                  <span>{subtotal.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}</span>
                 </div>
-              ))}
-              <div className="flex justify-between pt-3 border-t font-semibold">
-                <span>الإجمالي:</span>
+
+                {/* تكلفة الشحن */}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">تكلفة الشحن</span>
+                  <span>
+                    {shippingCost > 0 
+                      ? shippingCost.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }) 
+                      : 'مجاني'}
+                  </span>
+                </div>
+              </div>
+              
+              {/* الإجمالي النهائي */}
+              <div className="flex justify-between pt-3 border-t font-bold text-base">
+                <span>الإجمالي</span>
                 <span>{total.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}</span>
               </div>
             </CardContent>
