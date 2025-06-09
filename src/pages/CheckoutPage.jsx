@@ -40,6 +40,7 @@ const CheckoutPage = () => {
         setTotal(source.total);
         setSubtotal(source.subtotal || 0); // <-- استقبل المجموع الفرعي
         setShippingCost(source.shippingCost || 0); // <-- استقبل تكلفة الشحن
+        image: item.image
     } else {
       toast({
         title: "سلة التسوق فارغة",
