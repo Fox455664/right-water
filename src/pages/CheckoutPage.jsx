@@ -281,21 +281,36 @@ try {
               <CardTitle className="text-center text-lg font-semibold text-primary">ملخص الطلب</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
-              {cartItems.map(item => (
-                <div key={item.id} className="flex justify-between items-center border-b pb-2">
-                  <div className="text-sm">
-                    <p className="font-semibold">{item.name}</p>
-                    <p className="text-muted-foreground">الكمية: {item.quantity}</p>
-                  </div>
-                  <p className="text-sm font-medium">
-                    {(item.price * item.quantity).toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}
-                  </p>
-                </div>
-              ))}
-              <div className="flex justify-between pt-3 border-t font-semibold">
-                <span>الإجمالي:</span>
-                <span>{total.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}</span>
-              </div>
+  {cartItems.map(item => (
+    <div key={item.id} className="flex justify-between items-center border-b pb-2">
+      <div className="text-sm">
+        <p className="font-semibold">{item.name}</p>
+        <p className="text-muted-foreground">الكمية: {item.quantity}</p>
+      </div>
+      <p className="text-sm font-medium">
+        {(item.price * item.quantity).toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}
+      </p>
+    </div>
+  ))}
+
+  {/* =======================  بداية التعديل ======================= */}
+  {/* هنفترض إن تكلفة الشحن في متغير اسمه shippingCost */}
+  {/* 
+    ملحوظة: السطر ده هيظهر بس لو تكلفة الشحن أكبر من صفر 
+    علشان لو الشحن مجاني، مفيش داعي السطر يظهر
+  */}
+  {shippingCost > 0 && (
+    <div className="flex justify-between text-muted-foreground">
+      <span>تكلفة الشحن:</span>
+      <span>{shippingCost.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}</span>
+    </div>
+  )}
+  
+  {/* ده سطر الإجمالي الأصلي بتاعك زي ما هو، بس اتأكد إن متغير total شامل الشحن */}
+  <div className="flex justify-between pt-3 border-t font-semibold">
+    <span>الإجمالي:</span>
+    <span>{total.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}</span>
+  </div>
             </CardContent>
           </Card>
         </motion.div>
