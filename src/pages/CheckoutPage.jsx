@@ -40,17 +40,24 @@ const CheckoutPage = () => {
         // تحديث الـ state بالبيانات القادمة من السلة
         setCartItems(source.cartItems);
         setTotal(source.total);
-        setSubtotal(source.subtotal || 0); 
+        setSubtotal(source.subtotal || 0);
         setShippingCost(source.shippingCost || 0);
+        setIsLoadingData(false); // <-- أوقف التحميل هنا
     } else {
-        // (اختياري) يمكنك إضافة منطق هنا في حال دخل المستخدم لصفحة الدفع مباشرة
-        console.error("No cart data found, redirecting...");
-        // navigate('/cart'); // يمكنك إعادة توجيهه للسلة مثلاً
+        // ✨ هذا هو المكان الصحيح للـ else ✨
+        // إذا لم تكن هناك بيانات، أظهر رسالة وأوقف التحميل
+        toast({
+            title: "سلة التسوق فارغة",
+            description: "لا توجد منتجات في السلة لإتمام عملية الدفع.",
+            variant: "destructive",
+        });
+        setIsLoadingData(false); // <-- أوقف التحميل هنا أيضًا
+        // يمكنك أيضًا إعادة توجيه المستخدم إلى صفحة السلة
+        // navigate('/cart'); 
     }
-    setIsLoadingData(false);
 
-// Dependency array مهم جداً لمنع تكرار تنفيذ الـ Effect بشكل لا نهائي
-}, [location.state, navigate]); 
+// الـ useEffect ينتهي هنا بعد الـ if والـ else
+}, [location.state, navigate, toast]); // أضف toast إلى الـ dependencies 
     } else {
       toast({
         title: "سلة التسوق فارغة",
