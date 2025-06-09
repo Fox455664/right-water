@@ -32,33 +32,42 @@ const CheckoutPage = () => {
   });
 
   useEffect(() => {
+    useEffect(() => {
     setIsLoadingData(true);
     const source = location.state;
 
-    // التأكد من أن البيانات قادمة من صفحة السلة
-    if (source?.cartItems?.length && typeof source.total === 'number' && source.fromCart) {
-        // تحديث الـ state بالبيانات القادمة من السلة
+    // التأكد من أن البيانات قادمة من صفحة السلة بشكل صحيح
+    if (source?.fromCart && Array.isArray(source?.cartItems)) {
+      
+      // إذا كانت السلة فارغة ولكن المستخدم قادم منها
+      if (source.cartItems.length === 0) {
+        toast({
+          title: "سلة التسوق فارغة",
+          description: "لا يمكنك المتابعة إلى الدفع بسلة فارغة.",
+          variant: "destructive",
+        });
+        setIsLoadingData(false);
+        navigate('/cart'); // إعادة التوجيه إلى السلة
+      } else {
+        // إذا كانت هناك منتجات في السلة
         setCartItems(source.cartItems);
-        setTotal(source.total);
+        setTotal(source.total || 0);
         setSubtotal(source.subtotal || 0);
         setShippingCost(source.shippingCost || 0);
-        setIsLoadingData(false); // <-- أوقف التحميل هنا
-    } else {
-        // ✨ هذا هو المكان الصحيح للـ else ✨
-        // إذا لم تكن هناك بيانات، أظهر رسالة وأوقف التحميل
-        toast({
-            title: "سلة التسوق فارغة",
-            description: "لا توجد منتجات في السلة لإتمام عملية الدفع.",
-            variant: "destructive",
-        });
-        setIsLoadingData(false); // <-- أوقف التحميل هنا أيضًا
-        // يمكنك أيضًا إعادة توجيه المستخدم إلى صفحة السلة
-        // navigate('/cart'); 
-    }
+        setIsLoadingData(false);
+      }
 
-// الـ useEffect ينتهي هنا بعد الـ if والـ else
-}, [location.state, navigate, toast]); // أضف toast إلى الـ dependencies 
     } else {
+      // إذا دخل المستخدم إلى صفحة الدفع مباشرة بدون المرور على السلة
+      toast({
+        title: "بيانات غير متوفرة",
+        description: "يرجى الذهاب إلى سلة التسوق أولاً.",
+        variant: "destructive",
+      });
+      setIsLoadingData(false);
+      navigate('/'); // إعادة التوجيه إلى الصفحة الرئيسية
+    }
+  }, [location.state, navigate, toast]);
       toast({
         title: "سلة التسوق فارغة",
         description: "لم يتم العثور على منتجات في السلة. يتم توجيهك لصفحة المنتجات.",
