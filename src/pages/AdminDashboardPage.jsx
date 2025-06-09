@@ -43,7 +43,7 @@ const AdminDashboardPage = () => {
       // حساب الإيرادات من الطلبات المكتملة فقط (اختياري لكن أفضل)
       const totalRevenue = orders
         .filter(order => order.status === 'delivered')
-        .reduce((sum, order) => sum + (order.total || 0), 0);
+        .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
 
       // المنتجات النشطة
       const productsQuery = query(collection(db, 'products'), where('inStock', '>', 0));
