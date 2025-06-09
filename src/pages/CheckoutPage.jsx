@@ -25,7 +25,6 @@ const CheckoutPage = () => {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [subtotal, setSubtotal] = useState(0); // <-- إضافة جديدة
   const [shippingCost, setShippingCost] = useState(0); // <-- إضافة جديدة
-
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', email: '', phone: '',
     address: '', city: '', postalCode: '', paymentMethod: 'cod'
@@ -36,17 +35,18 @@ const CheckoutPage = () => {
     const source = location.state;
 
     if (source?.cartItems?.length && typeof source.total === 'number' && source.fromCart) {
-        setCartItems(source.cartItems);
-        setTotal(source.total);
-        setSubtotal(source.subtotal || 0);
-        setShippingCost(source.shippingCost || 0);
-        
-        // <<<----- هذا هو السطر الذي يسبب المشكلة
-        
-        // <<<-----
+      setCartItems(source.cartItems);
+      setTotal(source.total);
+    } else {
+      toast({
+        title: "سلة التسوق فارغة",
+        description: "لم يتم العثور على منتجات في السلة. يتم توجيهك لصفحة المنتجات.",
+        duration: 3000,
+      });
+      setTimeout(() => navigate('/products'), 1500);
     }
-    // ... باقي الكود
-}, [location.state]); // يجب إضافة location.state هنا
+    setIsLoadingData(false);
+  }, [location.state]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -88,7 +88,6 @@ const CheckoutPage = () => {
         paymentMethod: formData.paymentMethod,
         subtotalAmount: subtotal,    // <-- إضافة المجموع الفرعي
         shippingCost: shippingCost,  // <-- إضافة تكلفة الشحن
-        totalAmount: total,          // <-- الإجمالي الكلي (موجود بالفعل)
         createdAt: Timestamp.now(),
       };
 
@@ -272,7 +271,7 @@ try {
         </motion.form>
 
         {/* ملخص الطلب */}
-                <motion.div 
+        <motion.div 
           initial={{ opacity: 0, x: 20 }} 
           animate={{ opacity: 1, x: 0 }} 
           className="sticky top-24"
@@ -281,61 +280,20 @@ try {
             <CardHeader>
               <CardTitle className="text-center text-lg font-semibold text-primary">ملخص الطلب</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {/* قائمة المنتجات */}
-              <div className="space-y-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-  {cartItems.map(item => (
-    // الحاوية الرئيسية لكل منتج
-    <div 
-      key={item.id} 
-      className="flex items-center gap-4 border-b pb-3 mb-3 last:border-b-0 last:mb-0"
-    >
-      {/* العنصر الأول: الصورة */}
-      <img
-        src={item.image}
-        alt={item.name}
-        className="w-14 h-14 object-cover rounded-md flex-shrink-0"
-      />
-      
-      {/* العنصر الثاني: حاوية النص (تتمدد لتملأ الفراغ) */}
-      <div className="flex-grow text-sm">
-        <p className="font-semibold">{item.name}</p>
-        <p className="text-muted-foreground">الكمية: {item.quantity}</p>
-      </div>
-      
-      {/* العنصر الثالث: السعر */}
-      <p className="text-sm font-medium">
-        {(item.price * item.quantity).toLocaleString('ar-EG', {
-          style: 'currency',
-          currency: 'EGP'
-        })}
-      </p>
-    </div>
-  ))}
-</div>
-              
-              {/* ملخص الأسعار */}
-              <div className="pt-4 border-t space-y-2 text-sm">
-                {/* المجموع الفرعي */}
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">المجموع الفرعي</span>
-                  <span>{subtotal.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}</span>
+            <CardContent className="space-y-3 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+              {cartItems.map(item => (
+                <div key={item.id} className="flex justify-between items-center border-b pb-2">
+                  <div className="text-sm">
+                    <p className="font-semibold">{item.name}</p>
+                    <p className="text-muted-foreground">الكمية: {item.quantity}</p>
+                  </div>
+                  <p className="text-sm font-medium">
+                    {(item.price * item.quantity).toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}
+                  </p>
                 </div>
-
-                {/* تكلفة الشحن */}
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">تكلفة الشحن</span>
-                  <span>
-                    {shippingCost > 0 
-                      ? shippingCost.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }) 
-                      : 'مجاني'}
-                  </span>
-                </div>
-              </div>
-              
-              {/* الإجمالي النهائي */}
-              <div className="flex justify-between pt-3 border-t font-bold text-base">
-                <span>الإجمالي</span>
+              ))}
+              <div className="flex justify-between pt-3 border-t font-semibold">
+                <span>الإجمالي:</span>
                 <span>{total.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}</span>
               </div>
             </CardContent>
