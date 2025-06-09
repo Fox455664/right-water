@@ -35,12 +35,22 @@ const CheckoutPage = () => {
     setIsLoadingData(true);
     const source = location.state;
 
+    // التأكد من أن البيانات قادمة من صفحة السلة
     if (source?.cartItems?.length && typeof source.total === 'number' && source.fromCart) {
+        // تحديث الـ state بالبيانات القادمة من السلة
         setCartItems(source.cartItems);
         setTotal(source.total);
-        setSubtotal(source.subtotal || 0); // <-- استقبل المجموع الفرعي
-        setShippingCost(source.shippingCost || 0); // <-- استقبل تكلفة الشحن
-        image: item.image
+        setSubtotal(source.subtotal || 0); 
+        setShippingCost(source.shippingCost || 0);
+    } else {
+        // (اختياري) يمكنك إضافة منطق هنا في حال دخل المستخدم لصفحة الدفع مباشرة
+        console.error("No cart data found, redirecting...");
+        // navigate('/cart'); // يمكنك إعادة توجيهه للسلة مثلاً
+    }
+    setIsLoadingData(false);
+
+// Dependency array مهم جداً لمنع تكرار تنفيذ الـ Effect بشكل لا نهائي
+}, [location.state, navigate]); 
     } else {
       toast({
         title: "سلة التسوق فارغة",
@@ -288,18 +298,35 @@ try {
             <CardContent className="space-y-4">
               {/* قائمة المنتجات */}
               <div className="space-y-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                {cartItems.map(item => (
-                  <div key={item.id} className="flex justify-between items-center border-b pb-2 last:border-b-0">
-                    <div className="text-sm">
-                      <p className="font-semibold">{item.name}</p>
-                      <p className="text-muted-foreground">الكمية: {item.quantity}</p>
-                    </div>
-                    <p className="text-sm font-medium">
-                      {(item.price * item.quantity).toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}
-                    </p>
-                  </div>
-                ))}
-              </div>
+  {cartItems.map(item => (
+    // الحاوية الرئيسية لكل منتج
+    <div 
+      key={item.id} 
+      className="flex items-center gap-4 border-b pb-3 mb-3 last:border-b-0 last:mb-0"
+    >
+      {/* العنصر الأول: الصورة */}
+      <img
+        src={item.image}
+        alt={item.name}
+        className="w-14 h-14 object-cover rounded-md flex-shrink-0"
+      />
+      
+      {/* العنصر الثاني: حاوية النص (تتمدد لتملأ الفراغ) */}
+      <div className="flex-grow text-sm">
+        <p className="font-semibold">{item.name}</p>
+        <p className="text-muted-foreground">الكمية: {item.quantity}</p>
+      </div>
+      
+      {/* العنصر الثالث: السعر */}
+      <p className="text-sm font-medium">
+        {(item.price * item.quantity).toLocaleString('ar-EG', {
+          style: 'currency',
+          currency: 'EGP'
+        })}
+      </p>
+    </div>
+  ))}
+</div>
               
               {/* ملخص الأسعار */}
               <div className="pt-4 border-t space-y-2 text-sm">
