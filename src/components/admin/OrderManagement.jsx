@@ -134,9 +134,11 @@ const OrderManagement = () => {
   };
 
   const openDetailsModal = (order) => {
-    setCurrentOrderDetails(order);
+    // اعمل نسخة جديدة من الـ object
+    const orderCopy = JSON.parse(JSON.stringify(order));
+    setCurrentOrderDetails(orderCopy);
     setIsDetailsModalOpen(true);
-  };
+};
 
   const handleLogoUpload = (event) => {
     const file = event.target.files[0];
@@ -352,10 +354,16 @@ const OrderManagement = () => {
       )}
 
       {/* Order Details Modal */}
-      <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
-        <DialogContent className="sm:max-w-3xl bg-white dark:bg-slate-800 p-0" dir="rtl">
-          <div ref={printRef}>
-            <DialogHeader className="p-6 border-b dark:border-slate-700">
+      // ...
+<Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
+  <DialogContent className="sm:max-w-3xl bg-white dark:bg-slate-800 p-0" dir="rtl">
+    
+    {/* !! الخطوة الثانية هنا !! */}
+    {console.log("البيانات جوه المودال من الـ state:", JSON.stringify(currentOrderDetails, null, 2))}
+
+    <div ref={printRef}>
+      <DialogHeader className="p-6 border-b dark:border-slate-700">
+        {/* ... باقي الكود ... */}
               <div className="flex justify-between items-center">
                 <DialogTitle className="text-2xl font-bold text-sky-600 dark:text-sky-400">
                   تفاصيل الطلب #{currentOrderDetails?.id.slice(0, 8)}
@@ -409,11 +417,17 @@ const OrderManagement = () => {
                   </TableBody>
                 </Table>
               </div>
-              <div className="text-right border-t dark:border-slate-700 pt-4 mt-4">
-                <p><strong>المجموع الفرعي:</strong> {formatPrice(currentOrderDetails?.totalAmount)}</p>
-                <p><strong>تكلفة الشحن:</strong> {formatPrice(currentOrderDetails?.shippingCost || 0)}</p>
-                <p className="text-xl font-bold"><strong>الإجمالي الكلي:</strong> {formatPrice((currentOrderDetails?.totalAmount || 0) + (currentOrderDetails?.shippingCost || 0))}</p>
-              </div>
+              // ... داخل DialogContent
+<div className="text-right border-t dark:border-slate-700 pt-4 mt-4">
+    {/* احسب المجموع الفرعي هنا */}
+    <p><strong>المجموع الفرعي:</strong> {formatPrice(currentOrderDetails?.items?.reduce((total, item) => total + (item.price * item.quantity), 0))}</p>
+    
+    <p><strong>تكلفة الشحن:</strong> {formatPrice(currentOrderDetails?.shippingCost || 0)}</p>
+    
+    {/* اعرض الإجمالي الكلي اللي جاي من قاعدة البيانات مباشرة */}
+    <p className="text-xl font-bold"><strong>الإجمالي الكلي:</strong> {formatPrice(currentOrderDetails?.totalAmount)}</p>
+</div>
+// ...
             </div>
           </div>
           <DialogFooter className="p-6 border-t dark:border-slate-700 flex-col sm:flex-row gap-2">
