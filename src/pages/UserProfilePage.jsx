@@ -322,7 +322,7 @@ const UserProfilePage = () => {
                         </div>
                         {/* عرض تفاصيل المنتجات داخل الطلب */}
                         <div className="space-y-2">
-                          {order.products?.map((product, idx) => (
+                          {order.items?.map((product, idx) => ( 
                             <div
                               key={idx}
                               className="flex justify-between items-center border-t pt-2 border-slate-200 dark:border-slate-700"
