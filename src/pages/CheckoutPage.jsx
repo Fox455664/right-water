@@ -23,6 +23,8 @@ const CheckoutPage = () => {
   const [total, setTotal] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [subtotal, setSubtotal] = useState(0); // <-- إضافة جديدة
+  const [shippingCost, setShippingCost] = useState(0); // <-- إضافة جديدة
 
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', email: '', phone: '',
@@ -34,8 +36,10 @@ const CheckoutPage = () => {
     const source = location.state;
 
     if (source?.cartItems?.length && typeof source.total === 'number' && source.fromCart) {
-      setCartItems(source.cartItems);
-      setTotal(source.total);
+        setCartItems(source.cartItems);
+        setTotal(source.total);
+        setSubtotal(source.subtotal || 0); // <-- استقبل المجموع الفرعي
+        setShippingCost(source.shippingCost || 0); // <-- استقبل تكلفة الشحن
     } else {
       toast({
         title: "سلة التسوق فارغة",
@@ -85,6 +89,9 @@ const CheckoutPage = () => {
         totalAmount: total,
         status: 'pending',
         paymentMethod: formData.paymentMethod,
+        subtotalAmount: subtotal,    // <-- إضافة المجموع الفرعي
+        shippingCost: shippingCost,  // <-- إضافة تكلفة الشحن
+        totalAmount: total,          // <-- الإجمالي الكلي (موجود بالفعل)
         createdAt: Timestamp.now(),
       };
 
