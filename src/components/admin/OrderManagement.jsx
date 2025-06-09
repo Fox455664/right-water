@@ -9,8 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/components/ui/use-toast';
-// ✅ تم تعديل هذا السطر
-import { db, collection, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, writeBatch, where } from '@/firebase';
+import { db, collection, onSnapshot, query as firestoreQuery, orderBy, doc, updateDoc, deleteDoc, writeBatch, where } from '@/firebase';
 import { Loader2, PackageSearch, Filter, Search, MoreHorizontal, Eye, Trash2, Printer, UploadCloud, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ListFilter, Edit } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -48,10 +47,9 @@ const OrderManagement = () => {
 
   useEffect(() => {
     setLoading(true);
-    // ✅ تم تعديل هذا الجزء لاستخدام 'query'
-    let q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+    let q = firestoreQuery(collection(db, 'orders'), orderBy('createdAt', 'desc'));
     if (statusFilter !== 'all') {
-      q = query(collection(db, 'orders'), where('status', '==', statusFilter), orderBy('createdAt', 'desc'));
+      q = firestoreQuery(collection(db, 'orders'), where('status', '==', statusFilter), orderBy('createdAt', 'desc'));
     }
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -353,6 +351,7 @@ const OrderManagement = () => {
         </>
       )}
 
+      {/* Order Details Modal */}
       <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
         <DialogContent className="sm:max-w-3xl bg-white dark:bg-slate-800 p-0" dir="rtl">
           <div ref={printRef}>
