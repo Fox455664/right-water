@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
 import { motion } from 'framer-motion';
 import { User, Package, Clock, Settings, LogOut, Loader2 } from 'lucide-react';
-import { db, collection, query, where, orderBy, getDocs } from '@/lib/firebase';
+import { db, collection, query, where, orderBy, getDocs } from '@/firebase';
 
 const UserProfilePage = () => {
   const { user, logout, updateUserProfile } = useAuth();
