@@ -1,67 +1,145 @@
-import React from 'react';
-import { Link, useLocation, Navigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { CheckCircle, ShoppingBag, Home, FileText } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { CheckCircle, Package, ArrowRight, Loader2 } from 'lucide-react';
+import { db, doc, getDoc } from '@/lib/firebase';
 
 const OrderSuccessPage = () => {
-  const location = useLocation();
-  
-  if (!location.state || !location.state.orderId) {
-    // If no orderId is present in state, redirect to home. 
-    // This prevents users from accessing this page directly without placing an order.
-    return <Navigate to="/" replace />;
+  const { orderId } = useParams();
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchOrder = async () => {
+      try {
+        const orderDoc = await getDoc(doc(db, 'orders', orderId));
+        if (orderDoc.exists()) {
+          setOrder({ id: orderDoc.id, ...orderDoc.data() });
+        }
+      } catch (error) {
+        console.error('Error fetching order:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrder();
+  }, [orderId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <Loader2 className="h-12 w-12 text-sky-500 animate-spin" />
+      </div>
+    );
   }
 
-  const { orderId, customerName, totalAmount } = location.state;
+  if (!order) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-500 mb-4">عذراً، لم نتمكن من العثور على طلبك</h1>
+          <Button asChild>
+            <Link to="/">العودة للصفحة الرئيسية</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('ar-EG', { style: 'currency', currency: 'EGP' }).format(price);
+  };
 
   return (
-    <div className="container mx-auto px-4 py-16 md:py-20 flex flex-col items-center justify-center text-center min-h-[calc(100vh-200px)]">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, type: "spring", stiffness: 120 }}
-        className="p-8 md:p-16 bg-card/80 rounded-xl shadow-2xl glassmorphism-card max-w-2xl w-full"
-      >
-        <CheckCircle className="mx-auto h-20 w-20 md:h-24 md:w-24 text-green-500 mb-8 animate-pulse" />
-        <h1 className="text-3xl md:text-5xl font-extrabold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-emerald-600">
-          شكراً لك، {customerName || 'عميلنا العزيز'}!
-        </h1>
-        <p className="text-lg md:text-xl text-foreground mb-4">
-          تم استلام طلبك بنجاح وجاري تجهيزه.
-        </p>
-        <div className="bg-primary/10 p-4 rounded-lg mb-8 border border-primary/20">
-          <p className="text-md md:text-lg text-muted-foreground">
-            رقم طلبك هو: <strong className="text-primary font-mono text-lg md:text-xl">{orderId}</strong>
-          </p>
-          {typeof totalAmount === 'number' && (
-            <p className="text-md md:text-lg text-muted-foreground mt-1">
-              المبلغ الإجمالي: <strong className="text-primary font-semibold">{totalAmount.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}</strong>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 py-12">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="max-w-2xl mx-auto bg-white dark:bg-slate-800 rounded-xl shadow-xl p-8"
+        >
+          <div className="text-center mb-8">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 260, damping: 20 }}
+              className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6"
+            >
+              <CheckCircle className="w-12 h-12 text-green-500" />
+            </motion.div>
+            <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-200 mb-2">
+              تم استلام طلبك بنجاح!
+            </h1>
+            <p className="text-slate-600 dark:text-slate-400 mb-2">
+              شكراً لك على طلبك. سنقوم بمعالجته في أقرب وقت ممكن.
             </p>
-          )}
-        </div>
-        <p className="text-sm text-muted-foreground mb-8">
-          ستتلقى بريدًا إلكترونيًا قريبًا يحتوي على تفاصيل طلبك وتأكيد الشحن.
-          <br/>
-          إذا كان لديك أي استفسارات، لا تتردد في التواصل معنا.
-        </p>
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-          <Link to="/products">
-            <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-lg py-3">
-              <ShoppingBag className="ml-2 h-5 w-5" /> متابعة التسوق
+            <p className="text-sky-600 dark:text-sky-400 font-medium">
+              رقم الطلب: {order.id}
+            </p>
+          </div>
+
+          <div className="border-t border-b dark:border-slate-700 py-6 mb-6">
+            <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center">
+              <Package className="mr-2 rtl:ml-2 rtl:mr-0 text-sky-500" />
+              تفاصيل الطلب
+            </h2>
+            <div className="space-y-4">
+              {order.items.map((item) => (
+                <div key={item.id} className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4 rtl:space-x-reverse">
+                    <img 
+                      src={item.imageUrl} 
+                      alt={item.name} 
+                      className="w-16 h-16 object-cover rounded-lg"
+                    />
+                    <div>
+                      <h3 className="font-medium text-slate-800 dark:text-slate-200">{item.name}</h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">الكمية: {item.quantity}</p>
+                    </div>
+                  </div>
+                  <p className="font-medium text-slate-800 dark:text-slate-200">
+                    {formatPrice(item.price * item.quantity)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-4">معلومات الشحن</h2>
+            <div className="grid grid-cols-2 gap-4 text-slate-600 dark:text-slate-400">
+              <div>
+                <p className="font-medium">الاسم:</p>
+                <p>{order.shipping.fullName}</p>
+              </div>
+              <div>
+                <p className="font-medium">رقم الهاتف:</p>
+                <p>{order.shipping.phone}</p>
+              </div>
+              <div className="col-span-2">
+                <p className="font-medium">العنوان:</p>
+                <p>{order.shipping.address}</p>
+                <p>{order.shipping.city}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center">
+            <Button asChild variant="outline">
+              <Link to="/products" className="flex items-center">
+                <ArrowRight className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" />
+                متابعة التسوق
+              </Link>
             </Button>
-          </Link>
-          <Link to="/">
-            <Button variant="outline" size="lg" className="w-full sm:w-auto text-primary border-primary hover:bg-primary/10 text-lg py-3">
-              <Home className="ml-2 h-5 w-5" /> العودة للرئيسية
+            <Button asChild>
+              <Link to={`/order/${order.id}`}>تتبع الطلب</Link>
             </Button>
-          </Link>
-        </div>
-         <img 
-            alt="رسم توضيحي لصندوق شحن محاط بعلامات صح ونجوم صغيرة للدلالة على نجاح الطلب"
-            className="mx-auto mt-10 rounded-lg shadow-md w-full max-w-xs opacity-80"
-             src="https://images.unsplash.com/photo-1638423045244-36bd798e8700" />
-      </motion.div>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 };
