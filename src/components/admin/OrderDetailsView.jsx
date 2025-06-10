@@ -9,8 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/components/ui/use-toast';
-// تأكد من أن مسار firebase صحيح، قد يكون @/firebase أو @/firebase
-import { db, collection, onSnapshot, query as firestoreQuery, orderBy, doc, updateDoc, deleteDoc, writeBatch, where, Timestamp } from '@/firebase'; 
+// تأكد من أن مسار firebase صحيح
+import { db, collection, onSnapshot, query as firestoreQuery, orderBy, doc, updateDoc, deleteDoc, writeBatch, where } from '@/firebase'; 
 import { Loader2, PackageSearch, Search, MoreHorizontal, Eye, Trash2, Printer, UploadCloud, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ListFilter } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -47,13 +47,13 @@ const OrderManagement = () => {
   };
 
   // =================================================================
-  // !! هنا تم تطبيق الحل الكامل !!
+  // !! هنا تم تطبيق الحل الكامل (طبقة الترجمة) !!
   // =================================================================
   useEffect(() => {
     setLoading(true);
     let q = firestoreQuery(collection(db, 'orders'), orderBy('createdAt', 'desc'));
     if (statusFilter !== 'all') {
-      q = firestoreQuery(collection(db, 'orders'), where('status', '==', statusFilter), orderBy('createdAt', 'desc'));
+      q = firestoreQuery(q, where('status', '==', statusFilter));
     }
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -61,29 +61,27 @@ const OrderManagement = () => {
         const data = doc.data(); // البيانات الخام من Firebase
 
         // ** عملية الترجمة والتنظيف **
-        // بناء كائن جديد بالشكل الذي يتوقعه الكود
+        // نقوم ببناء كائن جديد بالشكل الذي يتوقعه باقي الكود
         return {
           id: doc.id,
+          // ابحث في كل الاحتمالات الممكنة لهيكل البيانات
+          fullName: data.shipping?.fullName || data.customerInfo?.name || "عميل غير مسجل",
+          userEmail: data.userEmail || data.shipping?.email || data.customerInfo?.email || 'غير متوفر',
+          phone: data.shipping?.phone || data.customerInfo?.phone || 'لا يوجد هاتف',
+          address: data.shipping?.address || data.customerInfo?.address || 'لا يوجد عنوان',
+          city: data.shipping?.city || data.customerInfo?.city || '',
+          country: data.shipping?.country || data.customerInfo?.country || '',
+
+          // ترجمة الحقول المالية وتوفير قيمة افتراضية
+          total: data.total || data.totalAmount || 0,
+          subtotal: data.subtotal || 0, // افترض أن subtotal موجود أو 0
+          shippingCost: data.shipping?.shippingCost || data.shippingCost || 0,
+          
+          // الحقول الأساسية
           status: data.status || 'pending',
           createdAt: data.createdAt, // نتركه كما هو لأن دالة formatDate تعالجه
-          userEmail: data.customerInfo?.email || data.userEmail || 'غير متوفر', // حاول أخذ الإيميل من أكثر من مكان
-          
-          // ترجمة customerInfo إلى shipping
-          shipping: {
-            fullName: data.customerInfo?.name || 'عميل غير مسجل',
-            phone: data.customerInfo?.phone || 'لا يوجد هاتف',
-            address: data.customerInfo?.address || 'لا يوجد عنوان',
-            city: data.customerInfo?.city || '',
-            area: data.customerInfo?.area || '',
-            notes: data.customerInfo?.notes || '',
-          },
-          
-          // ترجمة totalAmount إلى total
-          total: data.totalAmount || 0,
-          
-          // التأكد من وجود باقي الحقول
           items: data.items || [],
-          shippingCost: data.shippingCost || 0,
+          paymentMethod: data.paymentMethod || 'غير محدد',
         };
       });
       
@@ -98,16 +96,23 @@ const OrderManagement = () => {
     });
 
     return () => unsubscribe();
-  }, [statusFilter, toast]); // أضفت toast هنا للاعتمادية
+  }, [statusFilter]); // أزلت toast من هنا لأنه ليس له تأثير مباشر على الاستعلام
 
   const filteredOrders = useMemo(() => {
+    if (!searchTerm) return orders;
+    const lowercasedTerm = searchTerm.toLowerCase();
     return orders.filter(order =>
-      (order.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (order.shipping?.fullName && order.shipping.fullName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (order.userEmail && order.userEmail.toLowerCase().includes(searchTerm.toLowerCase()))
+      (order.id.toLowerCase().includes(lowercasedTerm)) ||
+      (order.fullName.toLowerCase().includes(lowercasedTerm)) ||
+      (order.userEmail.toLowerCase().includes(lowercasedTerm)) ||
+      (order.phone.includes(lowercasedTerm))
     );
   }, [orders, searchTerm]);
-
+  
+  // باقي الكود يبقى كما هو لأنه الآن يستقبل البيانات بالصيغة الصحيحة
+  
+  // ... (لصق باقي الكود الذي أرسلته من هنا)
+  
   const paginatedOrders = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredOrders.slice(startIndex, startIndex + ITEMS_PER_PAGE);
@@ -167,12 +172,11 @@ const OrderManagement = () => {
   };
 
   const openDetailsModal = (order) => {
-    // لا حاجة لعمل نسخة هنا لأن البيانات بالفعل نظيفة
-    setCurrentOrderDetails(order);
+    setCurrentOrderDetails(order); // الآن `order` بالفعل نظيف وجاهز للعرض
     setIsDetailsModalOpen(true);
   };
-
-  const handleLogoUpload = (event) => {
+  
+    const handleLogoUpload = (event) => {
     const file = event.target.files[0];
     if (file && file.type.startsWith('image/')) {
       setLogoFile(file);
@@ -182,43 +186,56 @@ const OrderManagement = () => {
     }
   };
 
-  const handlePrintInvoice = () => {
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write('<html><head><title>فاتورة طلب</title>');
-    printWindow.document.write('<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">');
-    printWindow.document.write('<style>body { direction: rtl; font-family: "Cairo", sans-serif; padding: 20px; } @media print { body { -webkit-print-color-adjust: exact; } .no-print { display: none; } }</style>');
+  const handlePrintInvoice = useCallback(() => {
+    const printContent = printRef.current;
+    if (!printContent) return;
+
+    const printWindow = window.open('', '_blank', 'height=600,width=800');
+    if (!printWindow) {
+      toast({ title: "خطأ", description: "يرجى السماح بالنوافذ المنبثقة للطباعة.", variant: "destructive" });
+      return;
+    }
+    
+    printWindow.document.write('<html><head><title>فاتورة</title>');
+    printWindow.document.write('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">');
+    printWindow.document.write('<style>body { direction: rtl; font-family: "Cairo", sans-serif; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } .no-print { display: none; }</style>');
     printWindow.document.write('</head><body>');
-    printWindow.document.write(printRef.current.innerHTML);
+    printWindow.document.write(printContent.innerHTML);
     printWindow.document.write('</body></html>');
     printWindow.document.close();
-    setTimeout(() => {
+    printWindow.onload = () => {
+      printWindow.focus();
       printWindow.print();
       printWindow.close();
-    }, 500);
-  };
+    };
+  }, []);
 
   const formatPrice = (price) => new Intl.NumberFormat('ar-EG', { style: 'currency', currency: 'EGP' }).format(price || 0);
   const formatDate = (timestamp) => {
-    if (!timestamp || !timestamp.seconds) return '-';
-    // إذا كان التاريخ بالفعل كائن Date، استخدمه مباشرة
-    if (timestamp instanceof Date) {
-        return timestamp.toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    if (!timestamp || !timestamp.seconds) {
+        // إذا كان التاريخ بالفعل كائن Date (مثل updatedAt)
+        if(timestamp instanceof Date) {
+            return timestamp.toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+        return '-';
     }
     return new Date(timestamp.seconds * 1000).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
   const changePage = (newPage) => {
-    setCurrentPage(newPage);
-    setSelectedOrders([]);
+    if (newPage > 0 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      setSelectedOrders([]);
+    }
   };
-
+  
   if (loading) {
     return <div className="flex justify-center items-center h-[calc(100vh-200px)]"><Loader2 className="h-16 w-16 text-sky-500 animate-spin" /></div>;
   }
   if (error) {
     return <div className="text-center py-10 text-red-500">{error}</div>;
   }
-
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -226,8 +243,6 @@ const OrderManagement = () => {
       transition={{ duration: 0.5 }}
       className="container mx-auto py-8 px-4 md:px-6"
     >
-      {/* ... باقي الكود كما هو بدون تغيير ... */}
-      {/* The rest of the JSX remains the same because it now receives the data in the format it expects */}
       <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
         <h1 className="text-2xl sm:text-3xl font-bold text-sky-600 dark:text-sky-400 flex items-center">
           <ListFilter className="mr-3 rtl:ml-3 rtl:mr-0" size={32} />
@@ -240,7 +255,7 @@ const OrderManagement = () => {
           <div className="relative">
             <Input
               type="text"
-              placeholder="ابحث برقم الطلب، اسم العميل..."
+              placeholder="ابحث بالرقم، الاسم، الإيميل، الهاتف..."
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
               className="w-full dark:bg-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600 focus:ring-sky-500 focus:border-sky-500 pl-10"
@@ -279,7 +294,7 @@ const OrderManagement = () => {
       {paginatedOrders.length === 0 && !loading ? (
         <div className="text-center py-12">
           <PackageSearch className="mx-auto h-16 w-16 text-slate-400 dark:text-slate-500 mb-4" />
-          <p className="text-xl text-slate-600 dark:text-slate-400">لم يتم العثور على طلبات تطابق بحثك أو الفلتر.</p>
+          <p className="text-xl text-slate-600 dark:text-slate-400">لم يتم العثور على طلبات.</p>
         </div>
       ) : (
         <>
@@ -320,7 +335,7 @@ const OrderManagement = () => {
                         </span>
                       </TableCell>
                       <TableCell className="px-3 py-4">
-                        <div>{order.shipping?.fullName || 'غير متوفر'}</div>
+                        <div>{order.fullName}</div>
                         <div className="text-xs text-slate-500 dark:text-slate-400">{order.userEmail}</div>
                       </TableCell>
                       <TableCell className="px-3 py-4">{formatDate(order.createdAt)}</TableCell>
@@ -411,15 +426,14 @@ const OrderManagement = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h3 className="font-semibold text-lg mb-2 text-slate-700 dark:text-slate-200">معلومات العميل</h3>
-                  <p><strong>الاسم:</strong> {currentOrderDetails?.shipping?.fullName}</p>
+                  <p><strong>الاسم:</strong> {currentOrderDetails?.fullName}</p>
                   <p><strong>البريد:</strong> {currentOrderDetails?.userEmail}</p>
-                  <p><strong>الهاتف:</strong> {currentOrderDetails?.shipping?.phone}</p>
+                  <p><strong>الهاتف:</strong> {currentOrderDetails?.phone}</p>
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg mb-2 text-slate-700 dark:text-slate-200">عنوان الشحن</h3>
-                  <p>{currentOrderDetails?.shipping?.address}</p>
-                  <p>{currentOrderDetails?.shipping?.city}{currentOrderDetails?.shipping?.area && `, ${currentOrderDetails?.shipping?.area}`}</p>
-                  {currentOrderDetails?.shipping?.notes && <p className="text-sm text-slate-500 dark:text-slate-400">ملاحظات: {currentOrderDetails?.shipping?.notes}</p>}
+                  <p>{currentOrderDetails?.address}</p>
+                  <p>{currentOrderDetails?.city}{currentOrderDetails?.country && `, ${currentOrderDetails?.country}`}</p>
                 </div>
               </div>
               <div>
@@ -434,8 +448,8 @@ const OrderManagement = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {currentOrderDetails?.items.map(item => (
-                      <TableRow key={item.id}>
+                    {currentOrderDetails?.items.map((item, index) => (
+                      <TableRow key={item.id || index}>
                         <TableCell>
                           <div className="flex items-center">
                             <img src={item.imageUrl || 'https://via.placeholder.com/50'} alt={item.name} className="w-10 h-10 object-cover rounded-md ml-3 rtl:mr-3" />
@@ -451,9 +465,9 @@ const OrderManagement = () => {
                 </Table>
               </div>
               <div className="text-right border-t dark:border-slate-700 pt-4 mt-4">
-                <p><strong>المجموع الفرعي:</strong> {formatPrice(currentOrderDetails?.total)}</p>
-                <p><strong>تكلفة الشحن:</strong> {formatPrice(currentOrderDetails?.shippingCost || 0)}</p>
-                <p className="text-xl font-bold"><strong>الإجمالي الكلي:</strong> {formatPrice((currentOrderDetails?.total || 0) + (currentOrderDetails?.shippingCost || 0))}</p>
+                <p><strong>المجموع الفرعي:</strong> {formatPrice(currentOrderDetails?.subtotal)}</p>
+                <p><strong>تكلفة الشحن:</strong> {formatPrice(currentOrderDetails?.shippingCost)}</p>
+                <p className="text-xl font-bold"><strong>الإجمالي الكلي:</strong> {formatPrice(currentOrderDetails?.total)}</p>
               </div>
             </div>
           </div>
