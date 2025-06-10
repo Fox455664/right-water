@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Package, ArrowRight, Loader2 } from 'lucide-react';
-import { db, doc, getDoc } from '@/lib/firebase';
+import { db, doc, getDoc } from '@/firebase';
 
 const OrderSuccessPage = () => {
   const { orderId } = useParams();
