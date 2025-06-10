@@ -1,4 +1,4 @@
-import React from 'react';
+  import React from 'react';
 import { motion } from 'framer-motion';
 import { Users, Target, Droplets, ShieldCheck, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,10 +25,10 @@ const AboutPage = () => {
         className="text-center mb-16"
       >
         <h1 className="text-5xl md:text-6xl font-extrabold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
-          عن شركة رايت واتر
+          عن شركة رايت ووتر
         </h1>
         <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-          في رايت واتر، نؤمن بأن الحصول على مياه شرب نظيفة وآمنة هو حق أساسي للجميع. مهمتنا هي توفير حلول مبتكرة وموثوقة لمعالجة المياه، تساهم في تحسين جودة الحياة وحماية البيئة.
+          في رايت ووتر، نؤمن بأن الحصول على مياه شرب نظيفة وآمنة هو حق أساسي للجميع. مهمتنا هي توفير حلول مبتكرة وموثوقة لمعالجة المياه، تساهم في تحسين جودة الحياة وحماية البيئة.
         </p>
       </motion.section>
 
@@ -41,7 +41,7 @@ const AboutPage = () => {
         <div>
           <img
             src="https://images.unsplash.com/photo-1567427018141-0584cfcbf1b8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fHdhdGVyJTIwdHJlYXRtZW50JTIwcGxhbnR8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=600&q=80"
-            alt="محطة معالجة مياه حديثة تابعة لشركة رايت واتر"
+            alt="محطة معالجة مياه حديثة تابعة لشركة رايت ووتر"
             className="rounded-xl shadow-2xl w-full h-auto object-cover"
           />
         </div>
@@ -125,9 +125,9 @@ const AboutPage = () => {
         className="mt-16 text-center"
       >
         <p className="text-lg text-foreground">
-          نحن في رايت واتر، لا نقدم مجرد منتجات، بل نقدم حلولاً شاملة تضمن لكم ولأحبائكم مياهاً أكثر نقاءً وصحة.
+          نحن في رايت ووتر، لا نقدم مجرد منتجات، بل نقدم حلولاً شاملة تضمن لكم ولأحبائكم مياهاً أكثر نقاءً وصحة.
         </p>
-        <img  alt="مجموعة متنوعة من فلاتر المياه وأنظمة التحلية من رايت واتر" class="w-full max-w-4xl mx-auto mt-8 rounded-lg shadow-lg" src="https://images.unsplash.com/photo-1623990088169-3eafccdec2c0" />
+        <img  alt="مجموعة متنوعة من فلاتر المياه وأنظمة التحلية من رايت ووتر" class="w-full max-w-4xl mx-auto mt-8 rounded-lg shadow-lg" src="https://images.unsplash.com/photo-1623990088169-3eafccdec2c0" />
       </motion.section>
     </div>
   );
