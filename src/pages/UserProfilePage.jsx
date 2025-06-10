@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -6,124 +6,56 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
 import { motion } from 'framer-motion';
-import {
-  User,
-  Package,
-  Clock,
-  Settings,
-  LogOut,
-  Loader2,
-  Truck,
-  PackageCheck,
-  PackageX,
-} from 'lucide-react';
-import {
-  db,
-  collection,
-  query,
-  where,
-  orderBy,
-  onSnapshot,
-} from '@/firebase';
-
-const statusOptions = [
-  {
-    value: "pending",
-    label: "قيد الانتظار",
-    icon: <Loader2 className="h-4 w-4 text-yellow-500" />,
-  },
-  {
-    value: "processing",
-    label: "قيد المعالجة",
-    icon: <Truck className="h-4 w-4 text-blue-500" />,
-  },
-  {
-    value: "shipped",
-    label: "تم الشحن",
-    icon: <Truck className="h-4 w-4 text-sky-500" />,
-  },
-  {
-    value: "delayed",
-    label: "تأجيل",
-    icon: <Clock className="h-4 w-4 text-orange-500" />,
-  },
-  {
-    value: "delivered",
-    label: "تم التسليم",
-    icon: <PackageCheck className="h-4 w-4 text-green-500" />,
-  },
-  {
-    value: "cancelled",
-    label: "ملغي",
-    icon: <PackageX className="h-4 w-4 text-red-500" />,
-  },
-];
-
-const getStatusLabelAndIcon = (status) => {
-  const found = statusOptions.find(option => option.value === status);
-  if (found) {
-    return (
-      <div className="flex items-center space-x-1 rtl:space-x-reverse text-sm text-slate-500 dark:text-slate-400">
-        {found.icon}
-        <span>{found.label}</span>
-      </div>
-    );
-  }
-  return <span className="text-sm text-slate-500 dark:text-slate-400">مكتمل</span>;
-};
+import { User, Package, Clock, Settings, LogOut, Loader2 } from 'lucide-react';
+import { db, collection, query, where, orderBy, getDocs } from '@/lib/firebase';
 
 const UserProfilePage = () => {
-  const { currentUser, signOut, updateUserProfile } = useAuth();
+  const { user, logout, updateUserProfile } = useAuth();
   const navigate = useNavigate();
-
-  // ref to scroll to orders section
-  const ordersSectionRef = useRef(null);
-
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState({
-    displayName: currentUser?.displayName || '',
-    email: currentUser?.email || '',
-    phone: currentUser?.phoneNumber || ''
+    displayName: user?.displayName || '',
+    email: user?.email || '',
+    phone: user?.phoneNumber || ''
   });
 
   useEffect(() => {
-    if (!currentUser) {
-      setLoading(false);
-      return;
-    }
+    const fetchOrders = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const q = query(
+          collection(db, 'orders'),
+          where('userId', '==', user.uid),
+          orderBy('createdAt', 'desc')
+        );
+        const querySnapshot = await getDocs(q);
+        const ordersList = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setOrders(ordersList);
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+        toast({
+          title: "خطأ في تحميل الطلبات",
+          description: "حدث خطأ أثناء تحميل طلباتك السابقة.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    setLoading(true);
-    const q = query(
-      collection(db, 'orders'),
-      where('userId', '==', currentUser.uid),
-      orderBy('createdAt', 'desc')
-    );
-
-    // Firebase real-time listener
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const ordersList = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setOrders(ordersList);
-      setLoading(false);
-    }, (error) => {
-      console.error('Error fetching orders:', error);
-      toast({
-        title: "خطأ في تحميل الطلبات",
-        description: "حدث خطأ أثناء تحميل طلباتك السابقة.",
-        variant: "destructive",
-      });
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [currentUser]);
+    fetchOrders();
+  }, [user]);
 
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
-    if (!currentUser) return;
+    if (!user) return;
     try {
       await updateUserProfile({
         displayName: profileData.displayName
@@ -143,7 +75,7 @@ const UserProfilePage = () => {
 
   const handleLogout = async () => {
     try {
-      await signOut();
+      await logout();
       navigate('/');
     } catch (error) {
       toast({
@@ -151,13 +83,6 @@ const UserProfilePage = () => {
         description: "حدث خطأ أثناء تسجيل الخروج. يرجى المحاولة مرة أخرى.",
         variant: "destructive",
       });
-    }
-  };
-
-  // تمرير تلقائي لقسم الطلبات عند الضغط على زر "طلباتي"
-  const scrollToOrders = () => {
-    if (ordersSectionRef.current) {
-      ordersSectionRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
@@ -174,7 +99,7 @@ const UserProfilePage = () => {
     });
   };
 
-  if (!currentUser) {
+  if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
         <p>الرجاء تسجيل الدخول لعرض هذه الصفحة.</p>
@@ -183,7 +108,7 @@ const UserProfilePage = () => {
   }
 
   return (
-    <div className="bg-slate-50 dark:bg-slate-900 min-h-screen py-12" dir="rtl">
+    <div className="bg-slate-50 dark:bg-slate-900 min-h-screen py-12">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           <motion.div
@@ -205,15 +130,15 @@ const UserProfilePage = () => {
                     <User className="w-12 h-12 text-sky-500" />
                   </div>
                   <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200">
-                    {currentUser.displayName || 'المستخدم'}
+                    {user.displayName || 'المستخدم'}
                   </h2>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm">{currentUser.email}</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm">{user.email}</p>
                 </div>
                 <div className="space-y-2">
                   <Button
                     variant="outline"
                     className="w-full justify-start"
-                    onClick={scrollToOrders} // هنا تم الربط مع تمرير القسم
+                    onClick={() => { /* Scroll to orders section or navigate if on a different tab view */ }}
                   >
                     <Package className="mr-2 rtl:ml-2 rtl:mr-0 h-5 w-5" />
                     طلباتي
@@ -221,7 +146,7 @@ const UserProfilePage = () => {
                   <Button
                     variant="outline"
                     className="w-full justify-start"
-                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} // للتمرير لأعلى الصفحة (الإعدادات)
+                    onClick={() => { /* Scroll to settings section */ }}
                   >
                     <Settings className="mr-2 rtl:ml-2 rtl:mr-0 h-5 w-5" />
                     إعدادات الحساب
@@ -285,10 +210,7 @@ const UserProfilePage = () => {
               </div>
 
               {/* Recent Orders */}
-              <div
-                ref={ordersSectionRef}
-                className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6"
-              >
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
                 <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-6">
                   طلباتي السابقة
                 </h3>
@@ -317,31 +239,27 @@ const UserProfilePage = () => {
                             <p className="font-medium text-sky-600 dark:text-sky-400">
                               {formatPrice(order.total)}
                             </p>
-                            {getStatusLabelAndIcon(order.status)}
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                              {order.status === 'pending' ? 'قيد المعالجة' : order.status === 'shipped' ? 'تم الشحن' : order.status === 'delivered' ? 'تم التوصيل' : 'مكتمل'}
+                            </p>
                           </div>
                         </div>
-                        {/* عرض تفاصيل المنتجات داخل الطلب */}
-                        <div className="space-y-2">
-                          {order.items?.map((product, idx) => ( 
-                            <div
-                              key={idx}
-                              className="flex justify-between items-center border-t pt-2 border-slate-200 dark:border-slate-700"
-                            >
-                              <p className="text-sm text-slate-700 dark:text-slate-300">
-                                {product.name} (x{product.quantity})
-                              </p>
-                              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                                {formatPrice(product.price * product.quantity)}
-                              </p>
-                            </div>
-                          ))}
+                        <div className="mt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-sm"
+                            onClick={() => navigate(`/order/${order.id}`)}
+                          >
+                            عرض التفاصيل
+                          </Button>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-center text-slate-500 dark:text-slate-400">
-                    لا توجد طلبات سابقة.
+                  <p className="text-center text-slate-500 dark:text-slate-400 py-8">
+                    لم تقم بأي طلبات حتى الآن
                   </p>
                 )}
               </div>
