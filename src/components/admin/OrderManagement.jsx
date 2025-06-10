@@ -182,8 +182,16 @@ const OrderManagement = () => {
     }
   };
 
-  const handlePrintInvoice = () => {
+  // في ملف OrderManagement.js
+
+const handlePrintInvoice = () => {
     const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+        alert("يرجى السماح بالنوافذ المنبثقة لطباعة الفاتورة.");
+        return;
+    }
+
+    // كتابة محتوى الفاتورة في النافذة الجديدة
     printWindow.document.write('<html><head><title>فاتورة طلب</title>');
     printWindow.document.write('<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">');
     printWindow.document.write('<style>body { direction: rtl; font-family: "Cairo", sans-serif; padding: 20px; } @media print { body { -webkit-print-color-adjust: exact; } .no-print { display: none; } }</style>');
@@ -191,11 +199,14 @@ const OrderManagement = () => {
     printWindow.document.write(printRef.current.innerHTML);
     printWindow.document.write('</body></html>');
     printWindow.document.close();
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 500);
-  };
+
+    // هنا الحل السحري: ننتظر حتى تحميل النافذة بالكامل
+    printWindow.onload = function() {
+        printWindow.focus();  // ركز على نافذة الطباعة
+        printWindow.print();  // أعط أمر الطباعة
+        printWindow.close();  // أغلق النافذة بعد الطباعة
+    };
+};
 
   const formatPrice = (price) => new Intl.NumberFormat('ar-EG', { style: 'currency', currency: 'EGP' }).format(price || 0);
   const formatDate = (timestamp) => {
