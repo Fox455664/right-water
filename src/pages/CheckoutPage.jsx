@@ -46,9 +46,7 @@ const CheckoutPage = () => {
       const subtotalFromCart = source.total;
       const calculatedShippingCost = SHIPPING_COST_FIXED;
       const calculatedTotal = subtotalFromCart + calculatedShippingCost;
-      const orderData = {
-      userId: currentUser ? currentUser.uid : null,
-        
+
       setCartItems(items);
       setSubtotal(subtotalFromCart);
       setShippingCost(calculatedShippingCost);
@@ -79,35 +77,36 @@ const CheckoutPage = () => {
 
     setIsSubmitting(true);
     try {
-      // 1. تجهيز بيانات الطلب لقاعدة البيانات
+      // الخطوة 3: تجهيز بيانات الطلب مع إضافة userId
       const orderData = {
+        userId: currentUser ? currentUser.uid : null, // <-- السطر المهم هنا
         shipping: {
-        fullName: `${formData.firstName} ${formData.lastName}`,
-        phone: formData.phone,
-        address: formData.address,
-        city: formData.city,
-        postalCode: formData.postalCode,
-        country: 'Egypt'
-      },
-      userEmail: formData.email,
-      items: cartItems.map(item => ({
-        id: item.id,
-        name: item.name,
-        quantity: item.quantity,
-        price: item.price,
-        imageUrl: item.image || null
-      })),
-      subtotal: subtotal,
-      shippingCost: shippingCost,
-      total: total,
-      status: 'pending',
-      paymentMethod: formData.paymentMethod,
-      createdAt: Timestamp.now(),
+          fullName: `${formData.firstName} ${formData.lastName}`,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city,
+          postalCode: formData.postalCode,
+          country: 'Egypt'
+        },
+        userEmail: formData.email,
+        items: cartItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          imageUrl: item.image || null
+        })),
+        subtotal: subtotal,
+        shippingCost: shippingCost,
+        total: total,
+        status: 'pending',
+        paymentMethod: formData.paymentMethod,
+        createdAt: Timestamp.now(),
+      };
 
       // 2. حفظ الطلب في Firestore
       const docRef = await addDoc(collection(db, 'orders'), orderData);
 
-      // 3. تحديث مخزون المنتجات
       for (const item of cartItems) {
         const productRef = doc(db, "products", item.id);
         const productSnap = await getDoc(productRef);
