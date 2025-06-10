@@ -12,6 +12,7 @@ import emailjs from '@emailjs/browser';
 import { useCart } from '@/contexts/CartContext';
 import { Loader2, Lock, ArrowRight, ShoppingBag } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAuth } from '@/contexts/AuthContext';
 
 // تعريف ثابت لتكلفة الشحن
 const SHIPPING_COST_FIXED = 50.00; // 50 جنيه مصري
@@ -21,7 +22,8 @@ const CheckoutPage = () => {
   const location = useLocation();
   const { toast } = useToast();
   const { clearCart } = useCart();
-
+  const { currentUser } = useAuth(); 
+  
   const [cartItems, setCartItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,7 +46,9 @@ const CheckoutPage = () => {
       const subtotalFromCart = source.total;
       const calculatedShippingCost = SHIPPING_COST_FIXED;
       const calculatedTotal = subtotalFromCart + calculatedShippingCost;
-
+      const orderData = {
+      userId: currentUser ? currentUser.uid : null,
+        
       setCartItems(items);
       setSubtotal(subtotalFromCart);
       setShippingCost(calculatedShippingCost);
@@ -78,28 +82,27 @@ const CheckoutPage = () => {
       // 1. تجهيز بيانات الطلب لقاعدة البيانات
       const orderData = {
         shipping: {
-          fullName: `${formData.firstName} ${formData.lastName}`,
-          phone: formData.phone,
-          address: formData.address,
-          city: formData.city,
-          postalCode: formData.postalCode,
-          country: 'Egypt'
-        },
-        userEmail: formData.email,
-        items: cartItems.map(item => ({
-          id: item.id,
-          name: item.name,
-          quantity: item.quantity,
-          price: item.price,
-          imageUrl: item.image || null
-        })),
-        subtotal: subtotal,
-        shippingCost: shippingCost,
-        total: total,
-        status: 'pending',
-        paymentMethod: formData.paymentMethod,
-        createdAt: Timestamp.now(),
-      };
+        fullName: `${formData.firstName} ${formData.lastName}`,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        postalCode: formData.postalCode,
+        country: 'Egypt'
+      },
+      userEmail: formData.email,
+      items: cartItems.map(item => ({
+        id: item.id,
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        imageUrl: item.image || null
+      })),
+      subtotal: subtotal,
+      shippingCost: shippingCost,
+      total: total,
+      status: 'pending',
+      paymentMethod: formData.paymentMethod,
+      createdAt: Timestamp.now(),
 
       // 2. حفظ الطلب في Firestore
       const docRef = await addDoc(collection(db, 'orders'), orderData);
