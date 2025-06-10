@@ -38,7 +38,7 @@ const CartPage = () => {
     }
 
     if (cartItems && typeof totalWithShipping === 'number') {
-      navigate('/checkout', { state: { cartItems: cartItems, total: totalWithShipping, fromCart: true } });
+      navigate('/checkout', { state: { cartItems: cartItems, subtotal: cartTotal, fromCart: true } });
     } else {
       toast({
         title: "خطأ في بيانات السلة",
