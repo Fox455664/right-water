@@ -1,353 +1,239 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+// src/pages/UserProfilePage.jsx
+
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
+import { db, collection, query, where, onSnapshot, orderBy, doc, updateDoc } from '@/firebase';
+import { updateProfile } from 'firebase/auth';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from '@/components/ui/use-toast';
-import { motion } from 'framer-motion';
-import {
-  User,
-  Package,
-  Clock,
-  Settings,
-  LogOut,
-  Loader2,
-  Truck,
-  PackageCheck,
-  PackageX,
-} from 'lucide-react';
-import {
-  db,
-  collection,
-  query,
-  where,
-  orderBy,
-  onSnapshot,
-} from '@/firebase';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/components/ui/use-toast';
+import { Loader2, User, Settings, LogOut, ShoppingCart, KeyRound } from 'lucide-react';
 
-const statusOptions = [
-  {
-    value: "pending",
-    label: "قيد الانتظار",
-    icon: <Loader2 className="h-4 w-4 text-yellow-500" />,
-  },
-  {
-    value: "processing",
-    label: "قيد المعالجة",
-    icon: <Truck className="h-4 w-4 text-blue-500" />,
-  },
-  {
-    value: "shipped",
-    label: "تم الشحن",
-    icon: <Truck className="h-4 w-4 text-sky-500" />,
-  },
-  {
-    value: "delayed",
-    label: "تأجيل",
-    icon: <Clock className="h-4 w-4 text-orange-500" />,
-  },
-  {
-    value: "delivered",
-    label: "تم التسليم",
-    icon: <PackageCheck className="h-4 w-4 text-green-500" />,
-  },
-  {
-    value: "cancelled",
-    label: "ملغي",
-    icon: <PackageX className="h-4 w-4 text-red-500" />,
-  },
-];
-
-const getStatusLabelAndIcon = (status) => {
-  const found = statusOptions.find(option => option.value === status);
-  if (found) {
-    return (
-      <div className="flex items-center space-x-1 rtl:space-x-reverse text-sm text-slate-500 dark:text-slate-400">
-        {found.icon}
-        <span>{found.label}</span>
-      </div>
-    );
-  }
-  return <span className="text-sm text-slate-500 dark:text-slate-400">مكتمل</span>;
+// --- دوال مساعدة (يفضل وضعها في ملف منفصل مثل lib/utils.js) ---
+const formatPrice = (price) => {
+  if (typeof price !== 'number') return 'N/A';
+  return new Intl.NumberFormat('ar-EG', { style: 'currency', currency: 'EGP' }).format(price);
 };
 
-const UserProfilePage = () => {
-  const { currentUser, signOut, updateUserProfile } = useAuth();
-  const navigate = useNavigate();
+const formatDate = (timestamp) => {
+  if (!timestamp?.toDate) return 'تاريخ غير معروف';
+  return new Intl.DateTimeFormat('ar-EG', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(timestamp.toDate());
+};
 
-  // ref to scroll to orders section
-  const ordersSectionRef = useRef(null);
+const getStatusInfo = (status) => {
+    const statuses = {
+      pending: { label: "قيد المراجعة", color: "bg-yellow-100 dark:bg-yellow-900/50", textColor: "text-yellow-800 dark:text-yellow-300" },
+      processing: { label: "قيد المعالجة", color: "bg-blue-100 dark:bg-blue-900/50", textColor: "text-blue-800 dark:text-blue-300" },
+      shipped: { label: "تم الشحن", color: "bg-sky-100 dark:bg-sky-900/50", textColor: "text-sky-800 dark:text-sky-300" },
+      completed: { label: "مكتمل", color: "bg-green-100 dark:bg-green-900/50", textColor: "text-green-800 dark:text-green-300" },
+      cancelled: { label: "ملغي", color: "bg-red-100 dark:bg-red-900/50", textColor: "text-red-800 dark:text-red-300" },
+      'on-hold': { label: "في الانتظار", color: "bg-orange-100 dark:bg-orange-900/50", textColor: "text-orange-800 dark:text-orange-300" },
+    };
+    return statuses[status] || { label: status, color: "bg-slate-100 dark:bg-slate-700", textColor: "text-slate-800 dark:text-slate-300" };
+};
+// --- نهاية الدوال المساعدة ---
+
+const UserProfilePage = () => {
+  const { currentUser, logout, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [profileData, setProfileData] = useState({
-    displayName: currentUser?.displayName || '',
-    email: currentUser?.email || '',
-    phone: currentUser?.phoneNumber || ''
+  const [loadingOrders, setLoadingOrders] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
   });
 
+  // جلب بيانات المستخدم والطلبات
   useEffect(() => {
+    if (authLoading) return;
     if (!currentUser) {
-      setLoading(false);
+      navigate('/login');
       return;
     }
 
-    setLoading(true);
+    // تعبئة النموذج ببيانات المستخدم الحالية
+    setFormData({
+      name: currentUser.displayName || '',
+      phone: currentUser.phoneNumber || '', // افترض أن رقم الهاتف قد يكون في Auth
+    });
+
+    // جلب طلبات المستخدم
+    setLoadingOrders(true);
     const q = query(
       collection(db, 'orders'),
       where('userId', '==', currentUser.uid),
       orderBy('createdAt', 'desc')
     );
 
-    // Firebase real-time listener
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const ordersList = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setOrders(ordersList);
-      setLoading(false);
+      const userOrders = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setOrders(userOrders);
+      setLoadingOrders(false);
     }, (error) => {
-      console.error('Error fetching orders:', error);
-      toast({
-        title: "خطأ في تحميل الطلبات",
-        description: "حدث خطأ أثناء تحميل طلباتك السابقة.",
-        variant: "destructive",
-      });
-      setLoading(false);
+      console.error("Error fetching user orders: ", error);
+      toast({ title: "خطأ", description: "فشل في تحميل الطلبات.", variant: "destructive" });
+      setLoadingOrders(false);
     });
 
     return () => unsubscribe();
-  }, [currentUser]);
+  }, [currentUser, authLoading, navigate, toast]);
 
-  const handleProfileUpdate = async (e) => {
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // دالة تحديث بيانات المستخدم
+  const handleUpdateProfile = async (e) => {
     e.preventDefault();
-    if (!currentUser) return;
+    setIsUpdating(true);
     try {
-      await updateUserProfile({
-        displayName: profileData.displayName
-      });
-      toast({
-        title: "تم تحديث الملف الشخصي",
-        description: "تم تحديث معلوماتك الشخصية بنجاح.",
-      });
+      // تحديث اسم العرض في Firebase Auth
+      if (currentUser.displayName !== formData.name) {
+        await updateProfile(currentUser, { displayName: formData.name });
+      }
+
+      // تحديث البيانات في collection 'users' (أفضل ممارسة)
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      await updateDoc(userDocRef, {
+        displayName: formData.name,
+        phone: formData.phone,
+      }, { merge: true }); // merge: true لإنشاء المستند إذا لم يكن موجوداً
+
+      toast({ title: "تم التحديث", description: "تم حفظ معلوماتك بنجاح." });
     } catch (error) {
-      toast({
-        title: "خطأ في تحديث الملف الشخصي",
-        description: "حدث خطأ أثناء تحديث معلوماتك. يرجى المحاولة مرة أخرى.",
-        variant: "destructive",
-      });
+      console.error("Error updating profile: ", error);
+      toast({ title: "خطأ", description: "فشل تحديث المعلومات.", variant: "destructive" });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   const handleLogout = async () => {
     try {
-      await signOut();
+      await logout();
       navigate('/');
     } catch (error) {
-      toast({
-        title: "خطأ في تسجيل الخروج",
-        description: "حدث خطأ أثناء تسجيل الخروج. يرجى المحاولة مرة أخرى.",
-        variant: "destructive",
-      });
+      toast({ title: "خطأ", description: "فشل تسجيل الخروج.", variant: "destructive" });
     }
   };
 
-  // تمرير تلقائي لقسم الطلبات عند الضغط على زر "طلباتي"
-  const scrollToOrders = () => {
-    if (ordersSectionRef.current) {
-      ordersSectionRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('ar-EG', { style: 'currency', currency: 'EGP' }).format(price);
-  };
-
-  const formatDate = (timestamp) => {
-    if (!timestamp || !timestamp.seconds) return 'تاريخ غير متوفر';
-    return new Date(timestamp.seconds * 1000).toLocaleDateString('ar-EG', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  if (!currentUser) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
-        <p>الرجاء تسجيل الدخول لعرض هذه الصفحة.</p>
-      </div>
-    );
+  if (authLoading || !currentUser) {
+    return <div className="flex justify-center items-center h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   }
 
   return (
-    <div className="bg-slate-50 dark:bg-slate-900 min-h-screen py-12" dir="rtl">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
-          >
-            {/* Profile Sidebar */}
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="md:col-span-1"
-            >
-              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
-                <div className="text-center mb-6">
-                  <div className="w-24 h-24 bg-sky-100 dark:bg-sky-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <User className="w-12 h-12 text-sky-500" />
-                  </div>
-                  <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200">
-                    {currentUser.displayName || 'المستخدم'}
-                  </h2>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm">{currentUser.email}</p>
+    <div className="bg-slate-50 dark:bg-slate-900 min-h-screen">
+      <div className="container mx-auto py-8 px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+        >
+          {/* --- العمود الأيسر: معلومات المستخدم وتعديلها --- */}
+          <div className="lg:col-span-1 space-y-8">
+            <Card>
+              <CardContent className="pt-6 flex flex-col items-center text-center">
+                <div className="w-24 h-24 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center mb-4">
+                  <User className="h-12 w-12 text-slate-500" />
                 </div>
-                <div className="space-y-2">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={scrollToOrders} // هنا تم الربط مع تمرير القسم
-                  >
-                    <Package className="mr-2 rtl:ml-2 rtl:mr-0 h-5 w-5" />
-                    طلباتي
+                <h2 className="text-2xl font-bold">{currentUser.displayName || 'مستخدم جديد'}</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">{currentUser.email}</p>
+                <div className="w-full space-y-2 mt-6">
+                  <Button asChild variant="ghost" className="w-full justify-start">
+                    <Link to="/profile"><ShoppingCart className="mr-2 rtl:ml-2 h-4 w-4" /> طلباتي</Link>
                   </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} // للتمرير لأعلى الصفحة (الإعدادات)
-                  >
-                    <Settings className="mr-2 rtl:ml-2 rtl:mr-0 h-5 w-5" />
-                    إعدادات الحساب
+                   <Button asChild variant="ghost" className="w-full justify-start">
+                    <Link to="/change-password"><KeyRound className="mr-2 rtl:ml-2 h-4 w-4" /> تغيير كلمة المرور</Link>
                   </Button>
-                  <Button
-                    variant="destructive"
-                    className="w-full justify-start"
-                    onClick={handleLogout}
-                  >
-                    <LogOut className="mr-2 rtl:ml-2 rtl:mr-0 h-5 w-5" />
-                    تسجيل الخروج
+                  <Button variant="destructive" className="w-full" onClick={handleLogout}>
+                    <LogOut className="mr-2 rtl:ml-2 h-4 w-4" /> تسجيل الخروج
                   </Button>
                 </div>
-              </div>
-            </motion.div>
+              </CardContent>
+            </Card>
 
-            {/* Main Content */}
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="md:col-span-2 space-y-8"
-            >
-              {/* Profile Settings */}
-              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
-                <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-6">
-                  المعلومات الشخصية
-                </h3>
-                <form onSubmit={handleProfileUpdate} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="displayName">الاسم</Label>
-                    <Input
-                      id="displayName"
-                      value={profileData.displayName}
-                      onChange={(e) => setProfileData(prev => ({ ...prev, displayName: e.target.value }))}
-                      className="dark:bg-slate-700"
-                    />
+            <Card>
+              <CardHeader>
+                <CardTitle>المعلومات الشخصية</CardTitle>
+                <CardDescription>قم بتحديث اسمك ورقم هاتفك.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleUpdateProfile} className="space-y-4">
+                  <div>
+                    <Label htmlFor="name">الاسم</Label>
+                    <Input id="name" name="name" value={formData.name} onChange={handleChange} />
                   </div>
-                  <div className="space-y-2">
+                  <div>
                     <Label htmlFor="email">البريد الإلكتروني</Label>
-                    <Input
-                      id="email"
-                      value={profileData.email}
-                      disabled
-                      className="bg-slate-50 dark:bg-slate-700/50"
-                    />
+                    <Input id="email" type="email" value={currentUser.email} disabled />
                   </div>
-                  <div className="space-y-2">
+                  <div>
                     <Label htmlFor="phone">رقم الهاتف</Label>
-                    <Input
-                      id="phone"
-                      value={profileData.phone}
-                      onChange={(e) => setProfileData(prev => ({ ...prev, phone: e.target.value }))}
-                      className="dark:bg-slate-700"
-                    />
+                    <Input id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} />
                   </div>
-                  <Button type="submit" className="bg-sky-500 hover:bg-sky-600 text-white">
-                    حفظ التغييرات
+                  <Button type="submit" className="w-full" disabled={isUpdating}>
+                    {isUpdating ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : null}
+                    {isUpdating ? 'جاري الحفظ...' : 'حفظ التغييرات'}
                   </Button>
                 </form>
-              </div>
+              </CardContent>
+            </Card>
+          </div>
 
-              {/* Recent Orders */}
-              <div
-                ref={ordersSectionRef}
-                className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6"
-              >
-                <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-6">
-                  طلباتي السابقة
-                </h3>
-                {loading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="h-8 w-8 text-sky-500 animate-spin" />
-                  </div>
+          {/* --- العمود الأيمن: قائمة الطلبات --- */}
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>طلباتي السابقة</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loadingOrders ? (
+                  <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
                 ) : orders.length > 0 ? (
                   <div className="space-y-4">
-                    {orders.map((order) => (
-                      <div
-                        key={order.id}
-                        className="border dark:border-slate-700 rounded-lg p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <p className="font-medium text-slate-800 dark:text-slate-200">
-                              طلب #{order.id.slice(0, 8)}...
-                            </p>
-                            <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center">
-                              <Clock className="w-4 h-4 mr-1 rtl:ml-1 rtl:mr-0" />
-                              {formatDate(order.createdAt)}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-medium text-sky-600 dark:text-sky-400">
-                              {formatPrice(order.total)}
-                            </p>
-                            {getStatusLabelAndIcon(order.status)}
-                          </div>
-                        </div>
-                        {/* عرض تفاصيل المنتجات داخل الطلب */}
-                        <div className="space-y-2">
-                          {order.products?.map((product, idx) => (
-                            <div
-                              key={idx}
-                              className="flex justify-between items-center border-t pt-2 border-slate-200 dark:border-slate-700"
-                            >
-                              <p className="text-sm text-slate-700 dark:text-slate-300">
-                                {product.name} (x{product.quantity})
-                              </p>
-                              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                                {formatPrice(product.price * product.quantity)}
-                              </p>
+                    {orders.map((order) => {
+                      const statusInfo = getStatusInfo(order.status);
+                      return (
+                        <div key={order.id} className="p-4 border dark:border-slate-700 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div className='flex-grow'>
+                                <p className="font-bold">طلب #{order.id.slice(0, 8)}...</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">بتاريخ: {formatDate(order.createdAt)}</p>
+                                <Badge className={`mt-2 ${statusInfo.color} ${statusInfo.textColor}`}>{statusInfo.label}</Badge>
                             </div>
-                          ))}
+                            <div className="text-left sm:text-right w-full sm:w-auto mt-2 sm:mt-0">
+                                <p className="font-semibold text-lg">{formatPrice(order.total)}</p>
+                                <Button asChild variant="outline" size="sm" className="mt-2">
+                                    <Link to={`/order/${order.id}`}>عرض التفاصيل</Link>
+                                </Button>
+                            </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
-                  <p className="text-center text-slate-500 dark:text-slate-400">
-                    لا توجد طلبات سابقة.
+                  <p className="text-center text-slate-500 dark:text-slate-400 py-8">
+                    لم تقم بأي طلبات بعد.
                   </p>
                 )}
-              </div>
-            </motion.div>
-          </motion.div>
-        </div>
+              </CardContent>
+            </Card>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
