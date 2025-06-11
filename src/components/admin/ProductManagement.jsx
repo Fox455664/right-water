@@ -2,9 +2,101 @@
 
 import React, { useState, useEffect } from 'react';
 // استيراد أدوات الـ Storage
+import { db, storage } from '@/firebase';
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { collection, doc, updateDoc, addDoc, deleteDoc, runTransaction, onSnapshot } from 'firebase/firestore';
+import imageCompression from 'browser-image-compression'; // <-- الخطوة 1: استيراد المكتبة الجديدة
+
+// ... (باقي الاستيرادات كما هي)
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog.jsx";
+import { PlusCircle, Edit, Trash2, PackagePlus, Loader2, AlertTriangle, Search, FilterX, ImagePlus, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '@/components/ui/use-toast';
+import { Progress } from '@/components/ui/progress.jsx';
+
+const ProductManagement = () => {
+  // ... (كل الـ states الحالية عندك بدون تغيير)
+
+  // --- بداية التعديل ---
+  // تعديل دالة اختيار الصورة لتشمل الضغط
+  const handleImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "ملف غير صالح", description: "يرجى اختيار ملف صورة.", variant: "destructive" });
+      return;
+    }
+
+    // إظهار المعاينة فوراً بالصورة الأصلية
+    setImagePreview(URL.createObjectURL(file));
+
+    // إعدادات ضغط الصورة
+    const options = {
+      maxSizeMB: 1,          // الحجم الأقصى للملف بعد الضغط (1 ميجابايت)
+      maxWidthOrHeight: 1024,  // أقصى عرض أو ارتفاع للصورة (1024 بكسل)
+      useWebWorker: true,    // لتسريع عملية الضغط دون تجميد الصفحة
+      initialQuality: 0.7    // جودة الصورة الأولية (70%)
+    };
+
+    try {
+      toast({ title: "جاري ضغط الصورة...", description: "قد تستغرق هذه العملية بضع ثوانٍ." });
+      const compressedFile = await imageCompression(file, options);
+      
+      // الآن imageFile هو الملف المضغوط الجاهز للرفع
+      setImageFile(compressedFile); 
+      
+      toast({ title: "✅ تم ضغط الصورة بنجاح", description: `أصبح حجم الصورة مناسباً للرفع.`, className: "bg-green-500 text-white" });
+
+    } catch (error) {
+      console.error("Image compression error: ", error);
+      toast({ title: "خطأ في ضغط الصورة", description: "سيتم محاولة رفع الصورة الأصلية.", variant: "destructive" });
+      // في حالة فشل الضغط، استخدم الصورة الأصلية
+      setImageFile(file);
+    }
+  };
+  // --- نهاية التعديل ---
+
+  // ... (باقي الدوال مثل resetImageState, uploadImageAndGetURL, handleAddProduct, handleEditProduct, ইত্যাদি)
+  // لا تحتاج لتغيير أي شيء آخر في الدوال دي، لأنها بالفعل بتستخدم متغير `imageFile`
+  // اللي إحنا دلوقتي خلينا قيمته هي الصورة المضغوطة.
+
+  // ... (باقي الكود الخاص بك كما هو بدون أي تغيير)
+
+  return (
+    // ... (كل الـ JSX الخاص بك بدون أي تغيير)
+  );
+};
+
+// فقط للتوضيح، سأضع الكود الكامل للملف مرة أخرى هنا بالأسفل للتأكد
+
+export default ProductManagement;
+
+
+// --- الكود الكامل للملف بعد التعديل (انسخ هذا) ---
+
+/* 
+  لاحظ أنني قمت بوضع الكود الكامل هنا مرة أخرى
+  للتأكد من عدم حدوث أي خطأ أثناء النسخ واللصق.
+  الكود أدناه هو نفسه الكود الذي أرسلته أنت، 
+  ولكن مع تعديل دالة `handleImageChange` فقط كما هو موضح أعلاه.
+*/
+
+// ... (الكود الكامل الذي أرسلته أنت مع دالة handleImageChange المعدلة)
+// src/pages/admin/ProductManagement.jsx (أو المسار الذي تستخدمه)
+
+import React, { useState, useEffect } from 'react';
+// استيراد أدوات الـ Storage
 import { db, storage } from '@/firebase'; // تأكد من أنك قمت بتصدير storage من ملف firebase.js
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { collection, doc, updateDoc, addDoc, deleteDoc, runTransaction, onSnapshot } from 'firebase/firestore';
+import imageCompression from 'browser-image-compression'; // <-- تم استيراد المكتبة
 
 // استيراد المكونات والأيقونات
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -17,8 +109,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { PlusCircle, Edit, Trash2, PackagePlus, Loader2, AlertTriangle, Search, FilterX, ImagePlus, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
-// هذا هو السطر الصحيح
-import { Progress } from '@/components/ui/progress.jsx';  // استيراد مكون شريط التقدم
+import { Progress } from '@/components/ui/progress.jsx';
 
 const ProductManagement = () => {
   const [products, setProducts] = useState([]);
@@ -32,7 +123,6 @@ const ProductManagement = () => {
   const [currentProduct, setCurrentProduct] = useState(null);
   const [newProduct, setNewProduct] = useState({ name: '', category: '', price: 0, description: '', image: '', stock: 0, originalPrice: null });
   
-  // حالات جديدة لإدارة الصور
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -41,7 +131,6 @@ const ProductManagement = () => {
   const [stockUpdate, setStockUpdate] = useState({ amount: 0, type: 'add' });
   const [searchTerm, setSearchTerm] = useState('');
 
-  // جلب المنتجات من Firestore في الوقت الفعلي
   useEffect(() => {
     setLoading(true);
     const productsCollectionRef = collection(db, 'products');
@@ -55,7 +144,7 @@ const ProductManagement = () => {
       setError("حدث خطأ أثناء تحميل المنتجات.");
       setLoading(false);
     });
-    return () => unsubscribe(); // Cleanup listener on component unmount
+    return () => unsubscribe();
   }, []);
 
   const handleInputChange = (e, formSetter) => {
@@ -63,16 +152,33 @@ const ProductManagement = () => {
     formSetter(prev => ({ ...prev, [name]: type === 'number' ? parseFloat(value) || 0 : value }));
   };
 
-  // --- دوال الصور الجديدة ---
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
-    if (file && file.type.startsWith("image/")) {
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "ملف غير صالح", description: "يرجى اختيار ملف صورة.", variant: "destructive" });
+      return;
+    }
+
+    setImagePreview(URL.createObjectURL(file));
+
+    const options = {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1024,
+      useWebWorker: true,
+      initialQuality: 0.7
+    };
+
+    try {
+      toast({ title: "جاري ضغط الصورة...", description: "هذه العملية سريعة جداً." });
+      const compressedFile = await imageCompression(file, options);
+      setImageFile(compressedFile);
+      toast({ title: "✅ الصورة جاهزة للرفع!", className: "bg-green-500 text-white" });
+    } catch (error) {
+      console.error("Image compression error: ", error);
+      toast({ title: "خطأ في ضغط الصورة", description: "سيتم رفع الصورة الأصلية.", variant: "destructive" });
       setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
-    } else {
-      setImageFile(null);
-      setImagePreview('');
-      if (file) toast({ title: "ملف غير صالح", description: "يرجى اختيار ملف صورة.", variant: "destructive" });
     }
   };
 
@@ -81,7 +187,6 @@ const ProductManagement = () => {
     setImagePreview('');
     setUploadProgress(0);
     setIsUploading(false);
-    // لإزالة الملف المختار من حقل الإدخال
     const fileInput = document.getElementById('file-upload');
     if(fileInput) fileInput.value = '';
   };
@@ -111,7 +216,6 @@ const ProductManagement = () => {
     });
   };
 
-  // --- تحديث دالة إضافة المنتج ---
   const handleAddProduct = async (e) => {
     e.preventDefault();
     if (!newProduct.name || newProduct.price <= 0) {
@@ -141,7 +245,6 @@ const ProductManagement = () => {
     }
   };
 
-  // --- تحديث دالة تعديل المنتج ---
   const handleEditProduct = async (e) => {
     e.preventDefault();
     if (!currentProduct || !currentProduct.name || currentProduct.price <= 0) {
