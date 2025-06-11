@@ -178,15 +178,26 @@ const CheckoutPage = () => {
           console.error("فشل إرسال إيميل التاجر:", emailError);
       }
 
+      // --- بداية الجزء الذي ستقوم بنسخه ---
+
+      // بعد حفظ الطلب وإرسال الإيميلات...
+
+      // 6. إتمام العملية
       clearCart();
+
       toast({
         title: "🎉 تم إرسال طلبك بنجاح!",
         description: `شكراً لك. رقم طلبك هو: ${docRef.id}`,
         className: "bg-green-500 text-white",
         duration: 7000,
       });
-      navigate('/order-success', {
-        state: { orderId: docRef.id, customerName: formData.firstName, totalAmount: total }
+
+      // الخطوة 1: جهّز بيانات الطلب الكاملة مع الـ ID الجديد
+      const createdOrder = { id: docRef.id, ...orderData };
+
+      // الخطوة 2: اذهب لصفحة النجاح وخذ معك بيانات الطلب الكاملة
+      navigate(`/order-success/${docRef.id}`, {
+        state: { orderData: createdOrder }
       });
 
     } catch (error) {
@@ -199,7 +210,9 @@ const CheckoutPage = () => {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }; // نهاية دالة handleSubmit
+
+// --- نهاية الجزء الذي ستقوم بنسخه ---
 
 
   // --- JSX (واجهة المستخدم) ---
