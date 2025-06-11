@@ -18,7 +18,7 @@ import { PlusCircle, Edit, Trash2, PackagePlus, Loader2, AlertTriangle, Search, 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
 // هذا هو السطر الصحيح
-import Progress from '@/components/ui/progress.jsx';  // استيراد مكون شريط التقدم
+import { Progress } from '@/components/ui/progress.jsx';  // استيراد مكون شريط التقدم
 
 const ProductManagement = () => {
   const [products, setProducts] = useState([]);
