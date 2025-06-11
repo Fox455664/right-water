@@ -1,4 +1,5 @@
-// CheckoutPage.jsx
+// src/pages/CheckoutPage.jsx
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,7 @@ import { Loader2, Lock, ArrowRight, ShoppingBag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 
-// دالة للتحقق من صحة المدخلات
+// دالة التحقق من صحة المدخلات
 const validateForm = (formData) => {
   const errors = {};
   if (!/^[a-zA-Z\u0600-\u06FF\s]+$/.test(formData.firstName.trim())) errors.firstName = "الاسم الأول يجب أن يحتوي على حروف فقط.";
@@ -23,7 +24,7 @@ const validateForm = (formData) => {
   if (!/^01[0-2,5]\d{8}$/.test(formData.phone)) errors.phone = "رقم الهاتف المصري يجب أن يكون 11 رقماً ويبدأ بـ 010, 011, 012, أو 015.";
   if (formData.address.trim().length < 10) errors.address = "العنوان يجب ألا يقل عن 10 أحرف.";
   if (formData.city.trim().length < 3) errors.city = "اسم المدينة يجب ألا يقل عن 3 أحرف.";
-  if (!/^\d{5,9}$/.test(formData.postalCode)) errors.postalCode = "الرمز البريدي يجب أن يكون من 5 إلى 9 أرقام."; // تم جعله إجبارياً
+  if (!/^\d{5,9}$/.test(formData.postalCode)) errors.postalCode = "الرمز البريدي يجب أن يكون من 5 إلى 9 أرقام.";
 
   return errors;
 };
@@ -46,15 +47,13 @@ const CheckoutPage = () => {
     firstName: '', lastName: '', email: '', phone: '',
     address: '', city: '', postalCode: '', paymentMethod: 'cod'
   });
-  const [formErrors, setFormErrors] = useState({}); // حالة جديدة لتخزين أخطاء التحقق
+  const [formErrors, setFormErrors] = useState({});
 
-  // ===== التعديل الأول: الاعتماد على بيانات السلة مباشرة =====
   useEffect(() => {
     setIsLoadingData(true);
     const source = location.state;
 
     if (source?.cartItems?.length && source.fromCart) {
-      // نعتمد مباشرة على القيم المحسوبة من السلة
       setCartItems(source.cartItems);
       setSubtotal(source.subtotal || 0);
       setShippingCost(source.shippingCost || 0);
@@ -73,17 +72,14 @@ const CheckoutPage = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    // إزالة الخطأ عند بدء المستخدم في الكتابة
     if (formErrors[name]) {
       setFormErrors(prev => ({ ...prev, [name]: null }));
     }
   };
 
-  // ===== التعديل الثالث: إضافة التحقق من الصحة =====
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // التحقق من صحة البيانات قبل الإرسال
     const errors = validateForm(formData);
     setFormErrors(errors);
     if (Object.keys(errors).length > 0) {
@@ -109,7 +105,7 @@ const CheckoutPage = () => {
           phone: formData.phone,
           address: formData.address,
           city: formData.city,
-          postalCode: formData.postalCode, // أصبح إجبارياً
+          postalCode: formData.postalCode,
           country: 'Egypt'
         },
         userEmail: formData.email,
@@ -140,6 +136,7 @@ const CheckoutPage = () => {
         }
       }
 
+      // --- بداية قسم الإيميلات المعدل ---
       const orderItemsHtml = cartItems.map(item => `
         <tr>
           <td style="padding:8px; border:1px solid #ddd;">${item.name}</td>
@@ -164,27 +161,22 @@ const CheckoutPage = () => {
 
       // إرسال إيميل العميل
       try {
-          await emailjs.send('service_0p2k5ih', 'template_bu792mf', { ...baseEmailParams, to_email: formData.email, reply_to: "rightwater156@gmail.com" }, 'xpSKf6d4h11LzEOLz');
+          const clientParams = { ...baseEmailParams, to_email: formData.email, reply_to: "rightwater156@gmail.com" };
+          await emailjs.send('service_0p2k5ih', 'template_bu792mf', clientParams, 'xpSKf6d4h11LzEOLz');
       } catch (emailError) {
           console.error("فشل إرسال إيميل العميل:", emailError);
       }
 
-      // ===== التعديل الثاني: حل مشكلة إيميل التاجر =====
-      // التأكد من أن قالب التاجر يستخدم المتغيرات الصحيحة.
-      // يجب أن يحتوي القالب على متغيرات مثل {{client_email}} و {{reply_to}}
+      // إرسال إيميل التاجر
       try {
-          await emailjs.send('service_0p2k5ih', 'template_tboeo2t', { ...baseEmailParams, to_email: "rightwater156@gmail.com", client_email: formData.email, reply_to: formData.email }, 'xpSKf6d4h11LzEOLz');
+          const merchantParams = { ...baseEmailParams, to_email: "rightwater156@gmail.com", client_email: formData.email, reply_to: formData.email };
+          await emailjs.send('service_0p2k5ih', 'template_tboeo2t', merchantParams, 'xpSKf6d4h11LzEOLz');
       } catch (emailError) {
           console.error("فشل إرسال إيميل التاجر:", emailError);
       }
+      // --- نهاية قسم الإيميلات المعدل ---
 
-      // --- بداية الجزء الذي ستقوم بنسخه ---
-
-      // بعد حفظ الطلب وإرسال الإيميلات...
-
-      // 6. إتمام العملية
       clearCart();
-
       toast({
         title: "🎉 تم إرسال طلبك بنجاح!",
         description: `شكراً لك. رقم طلبك هو: ${docRef.id}`,
@@ -192,10 +184,7 @@ const CheckoutPage = () => {
         duration: 7000,
       });
 
-      // الخطوة 1: جهّز بيانات الطلب الكاملة مع الـ ID الجديد
       const createdOrder = { id: docRef.id, ...orderData };
-
-      // الخطوة 2: اذهب لصفحة النجاح وخذ معك بيانات الطلب الكاملة
       navigate(`/order-success/${docRef.id}`, {
         state: { orderData: createdOrder }
       });
@@ -210,12 +199,8 @@ const CheckoutPage = () => {
     } finally {
       setIsSubmitting(false);
     }
-  }; // نهاية دالة handleSubmit
+  };
 
-// --- نهاية الجزء الذي ستقوم بنسخه ---
-
-
-  // --- JSX (واجهة المستخدم) ---
   if (isLoadingData) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
@@ -226,7 +211,13 @@ const CheckoutPage = () => {
   }
 
   if (!cartItems.length) {
-    // ... (هذا الجزء لم يتغير)
+    return (
+      <div className="text-center py-20">
+        <ShoppingBag className="mx-auto h-20 w-20 text-muted-foreground mb-4" />
+        <h2 className="text-2xl font-bold mb-2">سلة التسوق فارغة</h2>
+        <Button onClick={() => navigate('/products')}><ArrowRight className="ml-2" /> العودة للمنتجات</Button>
+      </div>
+    );
   }
 
   return (
@@ -246,7 +237,6 @@ const CheckoutPage = () => {
           className="lg:col-span-2 space-y-6 bg-card p-6 rounded-xl shadow-xl"
         >
           <div className="grid md:grid-cols-2 gap-4">
-            {/* عرض رسائل الخطأ تحت كل حقل */}
             <div>
                 <Label htmlFor="firstName">الاسم الأول</Label>
                 <Input id="firstName" name="firstName" value={formData.firstName} onChange={handleChange} required className={formErrors.firstName ? 'border-red-500' : ''} />
@@ -292,7 +282,6 @@ const CheckoutPage = () => {
             {isSubmitting ? "جاري تنفيذ الطلب..." : "تأكيد الطلب"}
           </Button>
         </motion.form>
-        {/* ملخص الطلب لم يتغير */}
         <motion.div 
           initial={{ opacity: 0, x: 20 }} 
           animate={{ opacity: 1, x: 0 }} 
