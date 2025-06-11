@@ -17,7 +17,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { PlusCircle, Edit, Trash2, PackagePlus, Loader2, AlertTriangle, Search, FilterX, ImagePlus, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
-import { Progress } from "@/components/ui/progress"; // استيراد مكون شريط التقدم
+// هذا هو السطر الصحيح
+import { Progress } from '@/components/ui/progress.jsx';  // استيراد مكون شريط التقدم
 
 const ProductManagement = () => {
   const [products, setProducts] = useState([]);
