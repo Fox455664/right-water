@@ -1,4 +1,6 @@
-import React, { useEffect } from 'react';
+// src/pages/CartPage.jsx
+
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +19,9 @@ const CartPage = () => {
   const shippingCost = cartTotal > 0 ? 50 : 0; 
   const totalWithShipping = cartTotal + shippingCost;
 
-  const handleCheckout = async () => {
+  // --- بداية التعديل ---
+  // تم تعديل هذه الدالة بالكامل
+  const handleCheckout = () => {
     if (cartItems.length === 0) {
       toast({
         title: "سلة التسوق فارغة",
@@ -37,16 +41,18 @@ const CartPage = () => {
         return;
     }
 
-    if (cartItems && typeof totalWithShipping === 'number') {
-      navigate('/checkout', { state: { cartItems: cartItems, total: totalWithShipping, fromCart: true } });
-    } else {
-      toast({
-        title: "خطأ في بيانات السلة",
-        description: "حدث خطأ أثناء تجهيز بيانات السلة. يرجى المحاولة مرة أخرى.",
-        variant: "destructive",
-      });
-    }
+    // هنا نقوم بتمرير كل البيانات بشكل منفصل لصفحة الدفع
+    navigate('/checkout', { 
+      state: { 
+        cartItems: cartItems, 
+        subtotal: cartTotal,      // المجموع الفرعي
+        shippingCost: shippingCost, // تكلفة الشحن
+        total: totalWithShipping, // الإجمالي الكلي
+        fromCart: true 
+      } 
+    });
   };
+  // --- نهاية التعديل ---
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -71,7 +77,7 @@ const CartPage = () => {
           transition={{ duration: 0.3 }}
           className="text-center py-16"
         >
-          <img  alt="سلة تسوق فارغة بشكل كرتوني" className="mx-auto w-64 h-64 mb-6 opacity-70" src="https://images.unsplash.com/photo-1641833278434-50f92b93d65a" />
+          <img alt="سلة تسوق فارغة" className="mx-auto w-64 h-64 mb-6 opacity-70" src="https://images.unsplash.com/photo-1641833278434-50f92b93d65a" />
           <h2 className="text-3xl font-semibold text-foreground mb-4">سلة التسوق فارغة!</h2>
           <p className="text-muted-foreground mb-8">
             لم تقم بإضافة أي منتجات إلى سلتك بعد. تصفح منتجاتنا الرائعة!
@@ -102,7 +108,7 @@ const CartPage = () => {
                 >
                   <Card className="flex flex-col sm:flex-row items-center p-4 glassmorphism-card overflow-hidden">
                     <img
-                      src={item.image || "https://images.unsplash.com/photo-1600857080039-639f0a2c6f93?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTJ8fHByb2R1Y3QlMjBwbGFjZWhvbGRlcnxlbnwwfHwwfHx8MA&auto=format&fit=crop&w=100&q=60"}
+                      src={item.image || "https://images.unsplash.com/photo-1600857080039-639f0a2c6f93?auto=format&fit=crop&w=100&q=60"}
                       alt={item.name}
                       className="w-24 h-24 object-cover rounded-md mb-4 sm:mb-0 sm:mr-4 sm:ml-4"
                     />
