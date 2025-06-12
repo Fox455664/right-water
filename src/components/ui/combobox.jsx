@@ -1,20 +1,28 @@
 // src/components/ui/combobox.jsx
 "use client"
-import * as React from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button.jsx";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command.jsx";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover.jsx";
+import * as React from "react"
+import { Check, ChevronsUpDown } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button.jsx"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command.jsx"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover.jsx"
 
+// الكود الباقي هنا بدون تغيير...
 export function Combobox({ options, value, onSelect, placeholder, searchPlaceholder, emptyPlaceholder, triggerClassName }) {
   const [open, setOpen] = React.useState(false)
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" role="combobox" aria-expanded={open} className={cn("w-full justify-between font-normal", triggerClassName)}>
-          {value ? options.find((option) => option.value === value)?.label : placeholder || "Select option..."}
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className={cn("w-full justify-between font-normal", triggerClassName)}
+        >
+          {value
+            ? options.find((option) => option.value === value)?.label
+            : placeholder || "Select option..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
