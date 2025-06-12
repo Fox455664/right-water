@@ -1,10 +1,9 @@
+// src/components/ui/command.jsx
 "use client"
-
 import * as React from "react"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent } from "@/components/ui/dialog.jsx"
 import { Command as CommandPrimitive } from "cmdk"
 import { Search } from "lucide-react"
-
 import { cn } from "@/lib/utils"
 
 const Command = React.forwardRef(({ className, ...props }, ref) => (
@@ -44,7 +43,6 @@ const CommandInput = React.forwardRef(({ className, ...props }, ref) => (
     />
   </div>
 ))
-
 CommandInput.displayName = CommandPrimitive.Input.displayName
 
 const CommandList = React.forwardRef(({ className, ...props }, ref) => (
@@ -54,13 +52,11 @@ const CommandList = React.forwardRef(({ className, ...props }, ref) => (
     {...props}
   />
 ))
-
 CommandList.displayName = CommandPrimitive.List.displayName
 
 const CommandEmpty = React.forwardRef((props, ref) => (
   <CommandPrimitive.Empty ref={ref} className="py-6 text-center text-sm" {...props} />
 ))
-
 CommandEmpty.displayName = CommandPrimitive.Empty.displayName
 
 const CommandGroup = React.forwardRef(({ className, ...props }, ref) => (
@@ -73,11 +69,10 @@ const CommandGroup = React.forwardRef(({ className, ...props }, ref) => (
     {...props}
   />
 ))
-
 CommandGroup.displayName = CommandPrimitive.Group.displayName
 
 const CommandSeparator = React.forwardRef(({ className, ...props }, ref) => (
-  <CommandPrimitive.Separator ref={ref} className={cn("-mx-1 h-px bg-border", className)} {...props} />
+  <CommandPrimitive.Separator ref={ref} className={cn("-mx-1 my-1 h-px bg-border", className)} {...props} />
 ))
 CommandSeparator.displayName = CommandPrimitive.Separator.displayName
 
@@ -91,13 +86,9 @@ const CommandItem = React.forwardRef(({ className, ...props }, ref) => (
     {...props}
   />
 ))
-
 CommandItem.displayName = CommandPrimitive.Item.displayName
 
-const CommandShortcut = ({
-  className,
-  ...props
-}) => {
+const CommandShortcut = ({ className, ...props }) => {
   return (
     <span
       className={cn("ml-auto text-xs tracking-widest text-muted-foreground", className)}
