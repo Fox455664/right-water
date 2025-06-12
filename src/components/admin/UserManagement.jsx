@@ -1,30 +1,27 @@
 // src/components/admin/UserManagement.jsx
-// تم تعديل هذا الملف بواسطة مساعد الذكاء الاصطناعي لحل مشكلة المسار
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { toast } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui/button.jsx';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table.jsx';
+import { Input } from '@/components/ui/input.jsx';
+import { Badge } from '@/components/ui/badge.jsx';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu.jsx';
+import { toast } from '@/components/ui/use-toast.jsx';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 import { db, collection, getDocs, orderBy as firestoreOrderBy, query as firestoreQuery, doc, updateDoc, deleteDoc } from '@/firebase'; // تم التعديل هنا لاستخدام المسار الصحيح
 import { Loader2, Users, Search, MoreHorizontal, Edit2, Trash2, KeyRound, UserX } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog.jsx';
+import { Label } from '@/components/ui/label.jsx';
 
 // 🔥🔥🔥 هذا هو السطر الذي تم إصلاحه 🔥🔥🔥
 import { useAuth } from '@/contexts/AuthContext.jsx'; // تم تغيير المسار من hooks إلى contexts وإضافة الامتداد
 
-// 1. تعريف معرّف الأدمن الخارق (UID) هنا
+// باقي الملف كما هو...
 const SUPER_ADMIN_UID = 'hoIGjbMl4AbEEX4LCQeTx8YNfXB2';
 
 const UserManagement = () => {
-  const { currentUser: loggedInUser } = useAuth(); // الحصول على المستخدم المسجل دخوله حالياً
+  const { currentUser: loggedInUser } = useAuth();
   const auth = getAuth();
-
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -33,12 +30,8 @@ const UserManagement = () => {
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const [editFormData, setEditFormData] = useState({
-    displayName: '',
-    email: '',
-    phone: '',
-    role: '',
+    displayName: '', email: '', phone: '', role: '',
   });
 
   const fetchUsers = useCallback(async () => {
@@ -63,10 +56,7 @@ const UserManagement = () => {
   const handleEditUser = (user) => {
     setCurrentUser(user);
     setEditFormData({
-      displayName: user.displayName || '',
-      email: user.email || '',
-      phone: user.phone || '',
-      role: user.role || 'customer',
+      displayName: user.displayName || '', email: user.email || '', phone: user.phone || '', role: user.role || 'customer',
     });
     setIsEditModalOpen(true);
   };
@@ -78,7 +68,6 @@ const UserManagement = () => {
 
   const handleUpdateUser = async () => {
     if (!currentUser) return;
-    
     if (editFormData.role !== currentUser.role && loggedInUser?.uid !== SUPER_ADMIN_UID) {
       toast({
         title: "غير مصرح لك",
@@ -87,14 +76,13 @@ const UserManagement = () => {
       });
       return;
     }
-
     setIsSubmitting(true);
     try {
       const userRef = doc(db, 'users', currentUser.id);
       await updateDoc(userRef, editFormData);
       toast({ title: "تم تحديث المستخدم بنجاح" });
       setIsEditModalOpen(false);
-      await fetchUsers(); // Re-fetch users
+      await fetchUsers();
     } catch (error) {
       console.error("Error updating user: ", error);
       toast({ title: "خطأ في تحديث المستخدم", variant: "destructive" });
@@ -115,7 +103,7 @@ const UserManagement = () => {
       await deleteDoc(doc(db, 'users', currentUser.id));
       toast({ title: "تم حذف المستخدم بنجاح" });
       setIsDeleteModalOpen(false);
-      await fetchUsers(); // Re-fetch users
+      await fetchUsers();
     } catch (error) {
       console.error("Error deleting user: ", error);
       toast({ title: "خطأ في حذف المستخدم", variant: "destructive" });
@@ -158,7 +146,6 @@ const UserManagement = () => {
     return new Date(timestamp.seconds * 1000).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
-  // باقي الكود بدون تغيير...
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -182,7 +169,6 @@ const UserManagement = () => {
                 />
             </div>
         </div>
-
       {loading ? ( <div className="flex justify-center items-center h-[calc(100vh-200px)]"><Loader2 className="h-16 w-16 text-sky-500 animate-spin" /></div> ) : filteredUsers.length === 0 ? (
         <div className="text-center py-12">
             <UserX className="mx-auto h-16 w-16 text-slate-400 dark:text-slate-500 mb-4" />
@@ -241,22 +227,11 @@ const UserManagement = () => {
       {/* Edit User Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-800">
-          <DialogHeader>
-            <DialogTitle>تعديل بيانات المستخدم</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>تعديل بيانات المستخدم</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-displayName" className="text-right col-span-1">الاسم</Label>
-                <Input id="edit-displayName" name="displayName" value={editFormData.displayName} onChange={handleEditFormChange} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-email" className="text-right col-span-1">البريد</Label>
-                <Input id="edit-email" name="email" value={editFormData.email} onChange={handleEditFormChange} className="col-span-3" disabled />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-phone" className="text-right col-span-1">الهاتف</Label>
-                <Input id="edit-phone" name="phone" value={editFormData.phone} onChange={handleEditFormChange} className="col-span-3" />
-            </div>
+            <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="edit-displayName" className="text-right col-span-1">الاسم</Label><Input id="edit-displayName" name="displayName" value={editFormData.displayName} onChange={handleEditFormChange} className="col-span-3" /></div>
+            <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="edit-email" className="text-right col-span-1">البريد</Label><Input id="edit-email" name="email" value={editFormData.email} onChange={handleEditFormChange} className="col-span-3" disabled /></div>
+            <div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="edit-phone" className="text-right col-span-1">الهاتف</Label><Input id="edit-phone" name="phone" value={editFormData.phone} onChange={handleEditFormChange} className="col-span-3" /></div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-role" className="text-right col-span-1">الدور</Label>
               <select id="edit-role" name="role" value={editFormData.role} onChange={handleEditFormChange} className="col-span-3 p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled={loggedInUser?.uid !== SUPER_ADMIN_UID}>
@@ -264,45 +239,18 @@ const UserManagement = () => {
                 <option value="admin">مدير</option>
               </select>
             </div>
-            {loggedInUser?.uid !== SUPER_ADMIN_UID && (
-              <p className="col-span-4 text-xs text-slate-500 dark:text-slate-400 text-center">صلاحية تغيير الدور مقتصرة على الأدمن الخارق فقط.</p>
-            )}
+            {loggedInUser?.uid !== SUPER_ADMIN_UID && (<p className="col-span-4 text-xs text-slate-500 dark:text-slate-400 text-center">صلاحية تغيير الدور مقتصرة على الأدمن الخارق فقط.</p>)}
           </div>
-          <DialogFooter>
-            <Button onClick={handleUpdateUser} disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin" /> : "حفظ التغييرات"}</Button>
-            <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
-          </DialogFooter>
+          <DialogFooter><Button onClick={handleUpdateUser} disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin" /> : "حفظ التغييرات"}</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
         </DialogContent>
       </Dialog>
       
-      {/* Delete and Reset Password Modals... */}
+      {/* Delete and Reset Password Modals */}
       <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
-        <DialogContent>
-            <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
-            <AlertDialogDescription>
-                هل أنت متأكد أنك تريد حذف المستخدم "{currentUser?.displayName}"؟ هذا الإجراء لا يمكن التراجع عنه.
-            </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>إلغاء</Button>
-            <Button variant="destructive" onClick={handleDeleteUser} disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin"/> : "حذف"}</Button>
-            </AlertDialogFooter>
-        </DialogContent>
+        <DialogContent><AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد أنك تريد حذف المستخدم "{currentUser?.displayName}"؟ هذا الإجراء لا يمكن التراجع عنه.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>إلغاء</Button><Button variant="destructive" onClick={handleDeleteUser} disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin"/> : "حذف"}</Button></AlertDialogFooter></DialogContent>
       </Dialog>
       <Dialog open={isResetModalOpen} onOpenChange={setIsResetModalOpen}>
-        <DialogContent>
-            <AlertDialogHeader>
-            <AlertDialogTitle>إعادة تعيين كلمة المرور</AlertDialogTitle>
-            <AlertDialogDescription>
-                هل أنت متأكد أنك تريد إرسال رابط إعادة تعيين كلمة المرور إلى "{currentUser?.email}"؟
-            </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-            <Button variant="outline" onClick={() => setIsResetModalOpen(false)}>إلغاء</Button>
-            <Button onClick={handlePasswordReset} disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin"/> : "إرسال"}</Button>
-            </AlertDialogFooter>
-        </DialogContent>
+        <DialogContent><AlertDialogHeader><AlertDialogTitle>إعادة تعيين كلمة المرور</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد أنك تريد إرسال رابط إعادة تعيين كلمة المرور إلى "{currentUser?.email}"؟</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><Button variant="outline" onClick={() => setIsResetModalOpen(false)}>إلغاء</Button><Button onClick={handlePasswordReset} disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin"/> : "إرسال"}</Button></AlertDialogFooter></DialogContent>
       </Dialog>
     </motion.div>
   );
