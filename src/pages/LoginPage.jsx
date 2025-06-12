@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,10 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { auth, googleProvider, facebookProvider, twitterProvider } from '@/firebase'; // Ensure twitterProvider is exported if used
+import { auth, googleProvider, facebookProvider, twitterProvider } from '@/firebase';
 import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { LogIn, Mail, KeyRound, Chrome, Facebook as FacebookIcon, Twitter as TwitterIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
+
+// 1. استيراد الصورة اللي ضفناها في مجلد assets
+import webFoxLogo from '@/assets/web-fox-logo.png'; 
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -27,11 +29,10 @@ const LoginPage = () => {
         title: "تم تسجيل الدخول بنجاح!",
         description: "مرحباً بعودتك.",
       });
-      // Check if admin to redirect to admin panel, otherwise to profile or home
       if (email.toLowerCase() === 'admin@rightwater.com' || email.toLowerCase() === 'testadmin@example.com') {
         navigate('/admin');
       } else {
-        navigate('/profile'); // Or '/'
+        navigate('/profile');
       }
     } catch (error) {
       toast({
@@ -51,11 +52,10 @@ const LoginPage = () => {
         title: "تم تسجيل الدخول بنجاح!",
         description: `مرحباً ${result.user.displayName || result.user.email}!`,
       });
-      // Check if admin (less likely with social, but for consistency)
       if (result.user.email && (result.user.email.toLowerCase() === 'admin@rightwater.com' || result.user.email.toLowerCase() === 'testadmin@example.com')) {
         navigate('/admin');
       } else {
-        navigate('/profile'); // Or '/'
+        navigate('/profile');
       }
     } catch (error) {
       toast({
@@ -67,13 +67,13 @@ const LoginPage = () => {
     setLoading(false);
   };
 
-
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="flex items-center justify-center min-h-[calc(100vh-200px)] bg-gradient-to-br from-water-blue/10 to-water-green/5 p-4"
+      // زودت الطول الأدنى للصفحة عشان اللوجو يظهر كويس لو الشاشة قصيرة
+      className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-water-blue/10 to-water-green/5 p-4"
     >
       <Card className="w-full max-w-md shadow-2xl glassmorphism-card">
         <CardHeader className="text-center">
@@ -160,6 +160,15 @@ const LoginPage = () => {
           </p>
         </CardFooter>
       </Card>
+
+      {/* 2. إضافة اللوجو والاسم هنا (خارج الكارد وتحت خالص) */}
+      <div className="mt-8 flex flex-col items-center space-y-2">
+        <img src={webFoxLogo} alt="Web Fox Logo" className="w-20 h-20 opacity-80" />
+        <p className="text-sm text-muted-foreground font-medium">
+          Mohammed Nasser
+        </p>
+      </div>
+      
     </motion.div>
   );
 };
