@@ -6,21 +6,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu.jsx';
-import { toast } from '@/components/ui/use-toast.jsx';
+import { useToast } from '@/components/ui/use-toast';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
-import { db, collection, getDocs, orderBy as firestoreOrderBy, query as firestoreQuery, doc, updateDoc, deleteDoc } from '@/firebase'; // تم التعديل هنا لاستخدام المسار الصحيح
+import { db, collection, getDocs, orderBy as firestoreOrderBy, query as firestoreQuery, doc, updateDoc, deleteDoc } from '@/firebase';
 import { Loader2, Users, Search, MoreHorizontal, Edit2, Trash2, KeyRound, UserX } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog.jsx';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog.jsx';
 import { Label } from '@/components/ui/label.jsx';
+import { useAuth } from '@/contexts/AuthContext.jsx';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog.jsx';
 
-// 🔥🔥🔥 هذا هو السطر الذي تم إصلاحه 🔥🔥🔥
-import { useAuth } from '@/contexts/AuthContext.jsx'; // تم تغيير المسار من hooks إلى contexts وإضافة الامتداد
-
-// باقي الملف كما هو...
 const SUPER_ADMIN_UID = 'hoIGjbMl4AbEEX4LCQeTx8YNfXB2';
 
 const UserManagement = () => {
   const { currentUser: loggedInUser } = useAuth();
+  const { toast } = useToast();
   const auth = getAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -223,8 +222,6 @@ const UserManagement = () => {
           </Table>
         </div>
       )}
-
-      {/* Edit User Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-800">
           <DialogHeader><DialogTitle>تعديل بيانات المستخدم</DialogTitle></DialogHeader>
@@ -241,16 +238,14 @@ const UserManagement = () => {
             </div>
             {loggedInUser?.uid !== SUPER_ADMIN_UID && (<p className="col-span-4 text-xs text-slate-500 dark:text-slate-400 text-center">صلاحية تغيير الدور مقتصرة على الأدمن الخارق فقط.</p>)}
           </div>
-          <DialogFooter><Button onClick={handleUpdateUser} disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin" /> : "حفظ التغييرات"}</Button><DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose></DialogFooter>
+          <DialogFooter><Button onClick={handleUpdateUser} disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin" /> : "حفظ التغييرات"}</Button><Button variant="outline" onClick={() => setIsEditModalOpen(false)}>إلغاء</Button></DialogFooter>
         </DialogContent>
       </Dialog>
-      
-      {/* Delete and Reset Password Modals */}
       <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
-        <DialogContent><AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد أنك تريد حذف المستخدم "{currentUser?.displayName}"؟ هذا الإجراء لا يمكن التراجع عنه.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>إلغاء</Button><Button variant="destructive" onClick={handleDeleteUser} disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin"/> : "حذف"}</Button></AlertDialogFooter></DialogContent>
+        <DialogContent><AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد أنك تريد حذف المستخدم "{currentUser?.displayName}"؟ هذا الإجراء لا يمكن التراجع عنه.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setIsDeleteModalOpen(false)}>إلغاء</AlertDialogCancel><AlertDialogAction asChild><Button variant="destructive" onClick={handleDeleteUser} disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin"/> : "حذف"}</Button></AlertDialogAction></AlertDialogFooter></DialogContent>
       </Dialog>
       <Dialog open={isResetModalOpen} onOpenChange={setIsResetModalOpen}>
-        <DialogContent><AlertDialogHeader><AlertDialogTitle>إعادة تعيين كلمة المرور</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد أنك تريد إرسال رابط إعادة تعيين كلمة المرور إلى "{currentUser?.email}"؟</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><Button variant="outline" onClick={() => setIsResetModalOpen(false)}>إلغاء</Button><Button onClick={handlePasswordReset} disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin"/> : "إرسال"}</Button></AlertDialogFooter></DialogContent>
+        <DialogContent><AlertDialogHeader><AlertDialogTitle>إعادة تعيين كلمة المرور</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد أنك تريد إرسال رابط إعادة تعيين كلمة المرور إلى "{currentUser?.email}"؟</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setIsResetModalOpen(false)}>إلغاء</AlertDialogCancel><AlertDialogAction asChild><Button onClick={handlePasswordReset} disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin"/> : "إرسال"}</Button></AlertDialogAction></AlertDialogFooter></DialogContent>
       </Dialog>
     </motion.div>
   );
