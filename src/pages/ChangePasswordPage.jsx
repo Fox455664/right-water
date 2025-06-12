@@ -9,10 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, KeyRound, Lock, ShieldCheck } from 'lucide-react';
+import { Loader2, KeyRound, ShieldCheck } from 'lucide-react';
 
 const ChangePasswordPage = () => {
-  const { reauthenticateAndChangePassword } = useAuth(); // سننشئ هذه الدالة
+  const { reauthenticateAndChangePassword, signOut } = useAuth(); // استخدام signOut من السياق
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -48,12 +48,16 @@ const ChangePasswordPage = () => {
         title: "✅ تم تغيير كلمة المرور بنجاح!",
         description: "تم تحديث كلمة مرورك. سيتم تسجيل خروجك الآن للأمان.",
         className: "bg-green-500 text-white",
+        duration: 5000,
       });
-      // يفضل تسجيل الخروج بعد تغيير كلمة المرور للأمان
-      setTimeout(() => navigate('/login'), 3000);
+      
+      // تسجيل الخروج بعد تغيير كلمة المرور للأمان
+      await signOut();
+      navigate('/login');
+
     } catch (err) {
       console.error(err);
-      if (err.code === 'auth/wrong-password') {
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setError("كلمة المرور الحالية التي أدخلتها غير صحيحة.");
       } else {
         setError("حدث خطأ ما. يرجى المحاولة مرة أخرى.");
@@ -64,16 +68,15 @@ const ChangePasswordPage = () => {
   };
 
   return (
-    <div className="container mx-auto py-12 px-4 flex justify-center">
-      <motion.div
+    <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-lg"
-      >
-        <Card>
-          <CardHeader className="text-center">
-            <KeyRound className="mx-auto h-12 w-12 text-primary" />
-            <CardTitle className="text-2xl font-bold mt-2">تغيير كلمة المرور</CardTitle>
+        className="w-full"
+    >
+        <Card className="border-none shadow-none">
+          <CardHeader>
+            <KeyRound className="mx-auto h-10 w-10 text-primary mb-2" />
+            <CardTitle className="text-xl font-bold">تغيير كلمة المرور</CardTitle>
             <CardDescription>لأمان حسابك، أدخل كلمة مرورك الحالية أولاً.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -98,9 +101,8 @@ const ChangePasswordPage = () => {
             </form>
           </CardContent>
         </Card>
-      </motion.div>
-    </div>
+    </motion.div>
   );
 };
 
-export default ChangePasswordPage;
+export default ChangePasswordPage;    
