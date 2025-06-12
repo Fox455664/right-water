@@ -1,3 +1,6 @@
+// src/components/ui/combobox.jsx
+// تم تعديل هذا الملف بواسطة مساعد الذكاء الاصطناعي لحل مشكلة المسار
+
 "use client"
 
 import * as React from "react"
@@ -12,12 +15,12 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command" // <-- سننشئ هذا الملف أيضاً
+} from "@/components/ui/command"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
+} from "@/components/ui/popover.jsx" // 🔥🔥🔥 هذا هو السطر الذي تم إصلاحه 🔥🔥🔥
 
 export function Combobox({ options, value, onSelect, placeholder, searchPlaceholder, emptyPlaceholder, triggerClassName }) {
   const [open, setOpen] = React.useState(false)
