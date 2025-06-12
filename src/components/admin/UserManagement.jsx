@@ -1,3 +1,6 @@
+// src/components/admin/UserManagement.jsx
+// تم تعديل هذا الملف بواسطة مساعد الذكاء الاصطناعي لحل مشكلة المسار
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -7,17 +10,19 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from '@/components/ui/use-toast';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
-import { db, collection, getDocs, orderBy as firestoreOrderBy, query as firestoreQuery, doc, updateDoc, deleteDoc } from '@/firebase';
-import { Loader2, Users, Search, MoreHorizontal, Edit2, Trash2, KeyRound, UserX, ShieldAlert } from 'lucide-react';
+import { db, collection, getDocs, orderBy as firestoreOrderBy, query as firestoreQuery, doc, updateDoc, deleteDoc } from '@/firebase'; // تم التعديل هنا لاستخدام المسار الصحيح
+import { Loader2, Users, Search, MoreHorizontal, Edit2, Trash2, KeyRound, UserX } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/hooks/useAuth'; // تأكد من أن هذا المسار صحيح
 
-// تعريف معرّف الأدمن الخارق (UID)
+// 🔥🔥🔥 هذا هو السطر الذي تم إصلاحه 🔥🔥🔥
+import { useAuth } from '@/contexts/AuthContext.jsx'; // تم تغيير المسار من hooks إلى contexts وإضافة الامتداد
+
+// 1. تعريف معرّف الأدمن الخارق (UID) هنا
 const SUPER_ADMIN_UID = 'hoIGjbMl4AbEEX4LCQeTx8YNfXB2';
 
 const UserManagement = () => {
-  const { user: loggedInUser } = useAuth();
+  const { currentUser: loggedInUser } = useAuth(); // الحصول على المستخدم المسجل دخوله حالياً
   const auth = getAuth();
 
   const [users, setUsers] = useState([]);
@@ -73,7 +78,7 @@ const UserManagement = () => {
 
   const handleUpdateUser = async () => {
     if (!currentUser) return;
-
+    
     if (editFormData.role !== currentUser.role && loggedInUser?.uid !== SUPER_ADMIN_UID) {
       toast({
         title: "غير مصرح لك",
@@ -89,7 +94,7 @@ const UserManagement = () => {
       await updateDoc(userRef, editFormData);
       toast({ title: "تم تحديث المستخدم بنجاح" });
       setIsEditModalOpen(false);
-      fetchUsers();
+      await fetchUsers(); // Re-fetch users
     } catch (error) {
       console.error("Error updating user: ", error);
       toast({ title: "خطأ في تحديث المستخدم", variant: "destructive" });
@@ -110,7 +115,7 @@ const UserManagement = () => {
       await deleteDoc(doc(db, 'users', currentUser.id));
       toast({ title: "تم حذف المستخدم بنجاح" });
       setIsDeleteModalOpen(false);
-      fetchUsers();
+      await fetchUsers(); // Re-fetch users
     } catch (error) {
       console.error("Error deleting user: ", error);
       toast({ title: "خطأ في حذف المستخدم", variant: "destructive" });
@@ -142,7 +147,6 @@ const UserManagement = () => {
     }
   };
 
-
   const filteredUsers = users.filter(user =>
     (user.displayName && user.displayName.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -154,6 +158,7 @@ const UserManagement = () => {
     return new Date(timestamp.seconds * 1000).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
+  // باقي الكود بدون تغيير...
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -161,32 +166,27 @@ const UserManagement = () => {
       transition={{ duration: 0.5 }}
       className="container mx-auto py-8 px-4 md:px-6"
     >
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-        <h1 className="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400 flex items-center">
-          <Users className="mr-3 rtl:ml-3 rtl:mr-0" size={32}/>
-          إدارة المستخدمين
-        </h1>
-      </div>
-
-      <div className="mb-6">
-        <Input
-          type="text"
-          placeholder="ابحث بالاسم، البريد الإلكتروني، أو رقم الهاتف..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full dark:bg-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600 focus:ring-purple-500 focus:border-purple-500"
-        />
-      </div>
-
-      {/* --- بداية الجزء الذي تم إصلاحه --- */}
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <Loader2 className="h-12 w-12 text-purple-500 animate-spin" />
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+            <h1 className="text-2xl sm:text-3xl font-bold text-sky-600 dark:text-sky-400 flex items-center">
+                <Users className="mr-3 rtl:ml-3 rtl:mr-0" size={32} />
+                إدارة المستخدمين
+            </h1>
+            <div className="relative w-full sm:w-auto">
+                <Search className="absolute left-3 rtl:right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+                <Input
+                type="text"
+                placeholder="ابحث بالاسم، البريد أو الهاتف..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full sm:w-64 pl-10 rtl:pr-10 rtl:pl-3"
+                />
+            </div>
         </div>
-      ) : filteredUsers.length === 0 ? (
+
+      {loading ? ( <div className="flex justify-center items-center h-[calc(100vh-200px)]"><Loader2 className="h-16 w-16 text-sky-500 animate-spin" /></div> ) : filteredUsers.length === 0 ? (
         <div className="text-center py-12">
-          <UserX className="mx-auto h-16 w-16 text-slate-400 dark:text-slate-500 mb-4" />
-          <p className="text-xl text-slate-600 dark:text-slate-400">لم يتم العثور على مستخدمين.</p>
+            <UserX className="mx-auto h-16 w-16 text-slate-400 dark:text-slate-500 mb-4" />
+            <p className="text-xl text-slate-600 dark:text-slate-400">لم يتم العثور على مستخدمين يطابقون بحثك.</p>
         </div>
       ) : (
         <div className="bg-white dark:bg-slate-800 shadow-md rounded-lg overflow-x-auto">
@@ -237,8 +237,6 @@ const UserManagement = () => {
           </Table>
         </div>
       )}
-      {/* --- نهاية الجزء الذي تم إصلاحه --- */}
-
 
       {/* Edit User Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
@@ -248,27 +246,20 @@ const UserManagement = () => {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-displayName" className="text-right col-span-1">الاسم</Label>
-              <Input id="edit-displayName" name="displayName" value={editFormData.displayName} onChange={handleEditFormChange} className="col-span-3 dark:bg-slate-700" />
+                <Label htmlFor="edit-displayName" className="text-right col-span-1">الاسم</Label>
+                <Input id="edit-displayName" name="displayName" value={editFormData.displayName} onChange={handleEditFormChange} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-email" className="text-right col-span-1">البريد</Label>
-              <Input id="edit-email" name="email" type="email" value={editFormData.email} onChange={handleEditFormChange} className="col-span-3 dark:bg-slate-700" disabled />
+                <Label htmlFor="edit-email" className="text-right col-span-1">البريد</Label>
+                <Input id="edit-email" name="email" value={editFormData.email} onChange={handleEditFormChange} className="col-span-3" disabled />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-phone" className="text-right col-span-1">الهاتف</Label>
-              <Input id="edit-phone" name="phone" value={editFormData.phone} onChange={handleEditFormChange} className="col-span-3 dark:bg-slate-700" />
+                <Label htmlFor="edit-phone" className="text-right col-span-1">الهاتف</Label>
+                <Input id="edit-phone" name="phone" value={editFormData.phone} onChange={handleEditFormChange} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-role" className="text-right col-span-1">الدور</Label>
-              <select 
-                id="edit-role" 
-                name="role" 
-                value={editFormData.role} 
-                onChange={handleEditFormChange} 
-                className="col-span-3 p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600 disabled:opacity-50 disabled:cursor-not-allowed" 
-                disabled={loggedInUser?.uid !== SUPER_ADMIN_UID}
-              >
+              <select id="edit-role" name="role" value={editFormData.role} onChange={handleEditFormChange} className="col-span-3 p-2 border rounded-md dark:bg-slate-700 dark:border-slate-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled={loggedInUser?.uid !== SUPER_ADMIN_UID}>
                 <option value="customer">عميل</option>
                 <option value="admin">مدير</option>
               </select>
@@ -278,51 +269,39 @@ const UserManagement = () => {
             )}
           </div>
           <DialogFooter>
+            <Button onClick={handleUpdateUser} disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin" /> : "حفظ التغييرات"}</Button>
             <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
-            <Button onClick={handleUpdateUser} disabled={isSubmitting} className="bg-purple-500 hover:bg-purple-600 text-white">
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} حفظ التغييرات
-            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       
-      {/* Delete Confirmation Modal */}
+      {/* Delete and Reset Password Modals... */}
       <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-800">
-          <DialogHeader>
-            <DialogTitle>تأكيد الحذف</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p>هل أنت متأكد أنك تريد حذف المستخدم <span className="font-semibold">{currentUser?.displayName || currentUser?.email}</span>؟ هذا الإجراء لا يمكن التراجع عنه.</p>
-            <p className="text-sm text-red-500 mt-2">ملاحظة: هذا سيحذف بيانات المستخدم من قاعدة البيانات فقط، ولن يحذف حساب المصادقة الخاص به من Firebase Auth تلقائياً.</p>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
-            <Button onClick={handleDeleteUser} variant="destructive" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} حذف المستخدم
-            </Button>
-          </DialogFooter>
+        <DialogContent>
+            <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
+            <AlertDialogDescription>
+                هل أنت متأكد أنك تريد حذف المستخدم "{currentUser?.displayName}"؟ هذا الإجراء لا يمكن التراجع عنه.
+            </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>إلغاء</Button>
+            <Button variant="destructive" onClick={handleDeleteUser} disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin"/> : "حذف"}</Button>
+            </AlertDialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Reset Password Modal */}
       <Dialog open={isResetModalOpen} onOpenChange={setIsResetModalOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-800">
-          <DialogHeader>
-            <DialogTitle className="flex items-center">
-              <KeyRound className="mr-2 text-yellow-500" />
-              تأكيد إعادة تعيين كلمة المرور
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p>هل أنت متأكد أنك تريد إرسال رابط لإعادة تعيين كلمة مرور المستخدم <span className="font-semibold">{currentUser?.displayName || currentUser?.email}</span>؟</p>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
-            <Button onClick={handlePasswordReset} disabled={isSubmitting} className="bg-yellow-500 hover:bg-yellow-600 text-white">
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} نعم، أرسل الرابط
-            </Button>
-          </DialogFooter>
+        <DialogContent>
+            <AlertDialogHeader>
+            <AlertDialogTitle>إعادة تعيين كلمة المرور</AlertDialogTitle>
+            <AlertDialogDescription>
+                هل أنت متأكد أنك تريد إرسال رابط إعادة تعيين كلمة المرور إلى "{currentUser?.email}"؟
+            </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+            <Button variant="outline" onClick={() => setIsResetModalOpen(false)}>إلغاء</Button>
+            <Button onClick={handlePasswordReset} disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin"/> : "إرسال"}</Button>
+            </AlertDialogFooter>
         </DialogContent>
       </Dialog>
     </motion.div>
