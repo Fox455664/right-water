@@ -1,15 +1,16 @@
 // src/components/admin/UserManagement.jsx
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button.jsx';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table.jsx';
 import { Input } from '@/components/ui/input.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu.jsx';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/use-toast.js';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 import { db, collection, getDocs, orderBy as firestoreOrderBy, query as firestoreQuery, doc, updateDoc, deleteDoc } from '@/firebase';
-import { Loader2, Users, Search, MoreHorizontal, Edit2, Trash2, KeyRound, UserX } from 'lucide-react';
+import { Loader2, Users, Search, MoreHorizontal, Edit2, Trash2, KeyRound, UserX, ArrowRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog.jsx';
 import { Label } from '@/components/ui/label.jsx';
 import { useAuth } from '@/contexts/AuthContext.jsx';
@@ -18,6 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 const SUPER_ADMIN_UID = 'hoIGjbMl4AbEEX4LCQeTx8YNfXB2';
 
 const UserManagement = () => {
+  const navigate = useNavigate();
   const { currentUser: loggedInUser } = useAuth();
   const { toast } = useToast();
   const auth = getAuth();
@@ -150,28 +152,34 @@ const UserManagement = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="container mx-auto py-8 px-4 md:px-6"
+      className="space-y-6"
     >
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-            <h1 className="text-2xl sm:text-3xl font-bold text-sky-600 dark:text-sky-400 flex items-center">
-                <Users className="mr-3 rtl:ml-3 rtl:mr-0" size={32} />
-                إدارة المستخدمين
-            </h1>
-            <div className="relative w-full sm:w-auto">
-                <Search className="absolute left-3 rtl:right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-                <Input
-                type="text"
-                placeholder="ابحث بالاسم، البريد أو الهاتف..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full sm:w-64 pl-10 rtl:pr-10 rtl:pl-3"
-                />
-            </div>
-        </div>
-      {loading ? ( <div className="flex justify-center items-center h-[calc(100vh-200px)]"><Loader2 className="h-16 w-16 text-sky-500 animate-spin" /></div> ) : filteredUsers.length === 0 ? (
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-100 flex items-center">
+            <Users className="mr-3 rtl:ml-3 rtl:mr-0" size={32} />
+            إدارة المستخدمين
+        </h1>
+        <Button variant="outline" onClick={() => navigate('/admin')}>
+            <ArrowRight className="ml-2 h-4 w-4" />
+            الرجوع للوحة التحكم
+        </Button>
+      </div>
+
+      <div className="relative w-full sm:max-w-md">
+          <Search className="absolute left-3 rtl:right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+          <Input
+            type="text"
+            placeholder="ابحث بالاسم، البريد أو الهاتف..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 rtl:pr-10 rtl:pl-3"
+          />
+      </div>
+
+      {loading ? ( <div className="flex justify-center items-center h-[calc(100vh-250px)]"><Loader2 className="h-16 w-16 text-sky-500 animate-spin" /></div> ) : filteredUsers.length === 0 ? (
         <div className="text-center py-12">
             <UserX className="mx-auto h-16 w-16 text-slate-400 dark:text-slate-500 mb-4" />
-            <p className="text-xl text-slate-600 dark:text-slate-400">لم يتم العثور على مستخدمين يطابقون بحثك.</p>
+            <p className="text-xl text-slate-600 dark:text-slate-400">لم يتم العثور على مستخدمين.</p>
         </div>
       ) : (
         <div className="bg-white dark:bg-slate-800 shadow-md rounded-lg overflow-x-auto">
@@ -222,6 +230,8 @@ const UserManagement = () => {
           </Table>
         </div>
       )}
+
+      {/* Edit User Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-800">
           <DialogHeader><DialogTitle>تعديل بيانات المستخدم</DialogTitle></DialogHeader>
@@ -241,6 +251,8 @@ const UserManagement = () => {
           <DialogFooter><Button onClick={handleUpdateUser} disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin" /> : "حفظ التغييرات"}</Button><Button variant="outline" onClick={() => setIsEditModalOpen(false)}>إلغاء</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Delete and Reset Password Modals */}
       <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
         <DialogContent><AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد أنك تريد حذف المستخدم "{currentUser?.displayName}"؟ هذا الإجراء لا يمكن التراجع عنه.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setIsDeleteModalOpen(false)}>إلغاء</AlertDialogCancel><AlertDialogAction asChild><Button variant="destructive" onClick={handleDeleteUser} disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin"/> : "حذف"}</Button></AlertDialogAction></AlertDialogFooter></DialogContent>
       </Dialog>
