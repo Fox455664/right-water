@@ -8,16 +8,16 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { toast } from '@/components/ui/use-toast';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 import { db, collection, getDocs, orderBy as firestoreOrderBy, query as firestoreQuery, doc, updateDoc, deleteDoc } from '@/lib/firebase';
-import { Loader2, Users, Search, MoreHorizontal, Edit2, Trash2, KeyRound, UserX } from 'lucide-react';
+import { Loader2, Users, Search, MoreHorizontal, Edit2, Trash2, KeyRound, UserX, ShieldAlert } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/hooks/useAuth'; // هام: تأكد من أنك تستخدم هذا الـ Hook للحصول على المستخدم المسجل
+import { useAuth } from '@/hooks/useAuth'; // تأكد من أن هذا المسار صحيح
 
-// 1. تعريف معرّف الأدمن الخارق (UID) هنا
+// تعريف معرّف الأدمن الخارق (UID)
 const SUPER_ADMIN_UID = 'hoIGjbMl4AbEEX4LCQeTx8YNfXB2';
 
 const UserManagement = () => {
-  const { user: loggedInUser } = useAuth(); // الحصول على المستخدم المسجل دخوله حالياً
+  const { user: loggedInUser } = useAuth();
   const auth = getAuth();
 
   const [users, setUsers] = useState([]);
@@ -49,7 +49,7 @@ const UserManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     fetchUsers();
@@ -73,8 +73,7 @@ const UserManagement = () => {
 
   const handleUpdateUser = async () => {
     if (!currentUser) return;
-    
-    // 2. التحقق من صلاحية الأدمن الخارق (بالـ UID) قبل تغيير الدور
+
     if (editFormData.role !== currentUser.role && loggedInUser?.uid !== SUPER_ADMIN_UID) {
       toast({
         title: "غير مصرح لك",
@@ -105,7 +104,6 @@ const UserManagement = () => {
   };
 
   const handleDeleteUser = async () => {
-    // ... (This function remains unchanged)
     if (!currentUser) return;
     setIsSubmitting(true);
     try {
@@ -127,7 +125,6 @@ const UserManagement = () => {
   };
 
   const handlePasswordReset = async () => {
-    // ... (This function remains unchanged)
     if (!currentUser?.email) return;
     setIsSubmitting(true);
     try {
@@ -145,6 +142,7 @@ const UserManagement = () => {
     }
   };
 
+
   const filteredUsers = users.filter(user =>
     (user.displayName && user.displayName.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -158,15 +156,39 @@ const UserManagement = () => {
 
   return (
     <motion.div
-      // ... (The main div remains unchanged)
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
       className="container mx-auto py-8 px-4 md:px-6"
     >
-      {/* ... (Header, Search, and Loading/No Users states remain unchanged) ... */}
-        
-      {loading ? ( /* ... */ ) : filteredUsers.length === 0 ? ( /* ... */ ) : (
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400 flex items-center">
+          <Users className="mr-3 rtl:ml-3 rtl:mr-0" size={32}/>
+          إدارة المستخدمين
+        </h1>
+      </div>
+
+      <div className="mb-6">
+        <Input
+          type="text"
+          placeholder="ابحث بالاسم، البريد الإلكتروني، أو رقم الهاتف..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full dark:bg-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600 focus:ring-purple-500 focus:border-purple-500"
+        />
+      </div>
+
+      {/* --- بداية الجزء الذي تم إصلاحه --- */}
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-12 w-12 text-purple-500 animate-spin" />
+        </div>
+      ) : filteredUsers.length === 0 ? (
+        <div className="text-center py-12">
+          <UserX className="mx-auto h-16 w-16 text-slate-400 dark:text-slate-500 mb-4" />
+          <p className="text-xl text-slate-600 dark:text-slate-400">لم يتم العثور على مستخدمين.</p>
+        </div>
+      ) : (
         <div className="bg-white dark:bg-slate-800 shadow-md rounded-lg overflow-x-auto">
           <Table>
             <TableHeader className="bg-slate-50 dark:bg-slate-700/50">
@@ -215,6 +237,8 @@ const UserManagement = () => {
           </Table>
         </div>
       )}
+      {/* --- نهاية الجزء الذي تم إصلاحه --- */}
+
 
       {/* Edit User Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
@@ -223,10 +247,20 @@ const UserManagement = () => {
             <DialogTitle>تعديل بيانات المستخدم</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            {/* ... (Fields for displayName, email, phone remain unchanged) ... */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-displayName" className="text-right col-span-1">الاسم</Label>
+              <Input id="edit-displayName" name="displayName" value={editFormData.displayName} onChange={handleEditFormChange} className="col-span-3 dark:bg-slate-700" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-email" className="text-right col-span-1">البريد</Label>
+              <Input id="edit-email" name="email" type="email" value={editFormData.email} onChange={handleEditFormChange} className="col-span-3 dark:bg-slate-700" disabled />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-phone" className="text-right col-span-1">الهاتف</Label>
+              <Input id="edit-phone" name="phone" value={editFormData.phone} onChange={handleEditFormChange} className="col-span-3 dark:bg-slate-700" />
+            </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-role" className="text-right col-span-1">الدور</Label>
-              {/* 3. تعطيل حقل الدور إذا لم يكن الأدمن الخارق (بالـ UID) */}
               <select 
                 id="edit-role" 
                 name="role" 
@@ -244,13 +278,53 @@ const UserManagement = () => {
             )}
           </div>
           <DialogFooter>
-            {/* ... (Buttons remain unchanged) ... */}
+            <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
+            <Button onClick={handleUpdateUser} disabled={isSubmitting} className="bg-purple-500 hover:bg-purple-600 text-white">
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} حفظ التغييرات
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       
-      {/* ... (Delete and Reset Password modals remain unchanged) ... */}
+      {/* Delete Confirmation Modal */}
+      <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-800">
+          <DialogHeader>
+            <DialogTitle>تأكيد الحذف</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>هل أنت متأكد أنك تريد حذف المستخدم <span className="font-semibold">{currentUser?.displayName || currentUser?.email}</span>؟ هذا الإجراء لا يمكن التراجع عنه.</p>
+            <p className="text-sm text-red-500 mt-2">ملاحظة: هذا سيحذف بيانات المستخدم من قاعدة البيانات فقط، ولن يحذف حساب المصادقة الخاص به من Firebase Auth تلقائياً.</p>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
+            <Button onClick={handleDeleteUser} variant="destructive" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} حذف المستخدم
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
+      {/* Reset Password Modal */}
+      <Dialog open={isResetModalOpen} onOpenChange={setIsResetModalOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-800">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <KeyRound className="mr-2 text-yellow-500" />
+              تأكيد إعادة تعيين كلمة المرور
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>هل أنت متأكد أنك تريد إرسال رابط لإعادة تعيين كلمة مرور المستخدم <span className="font-semibold">{currentUser?.displayName || currentUser?.email}</span>؟</p>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild><Button variant="outline">إلغاء</Button></DialogClose>
+            <Button onClick={handlePasswordReset} disabled={isSubmitting} className="bg-yellow-500 hover:bg-yellow-600 text-white">
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} نعم، أرسل الرابط
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 };
