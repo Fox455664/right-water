@@ -157,7 +157,7 @@ const CheckoutPage = () => {
 
       try {
         // Public Key بتاعك من حساب EmailJS
-        const YOUR_PUBLIC_KEY = 'xpSKf6d4h11LzEOLz'; // تأكد من أن هذا هو المفتاح الصحيح
+        const YOUR_PUBLIC_KEY = 'uFVJ_0paYoHGm544e'; // تأكد من أن هذا هو المفتاح الصحيح
         
         // إرسال الإيميل للعميل
         const clientParams = { ...baseEmailParams, to_email: orderData.userEmail, reply_to: "rightwater156@gmail.com" };
