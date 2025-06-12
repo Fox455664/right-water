@@ -1,13 +1,11 @@
 // src/components/ui/combobox.jsx
-// تم تعديل هذا الملف بواسطة مساعد الذكاء الاصطناعي لحل مشكلة المسار
-
 "use client"
 
 import * as React from "react"
 import { Check, ChevronsUpDown } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button.jsx" // Proactive fix
 import {
   Command,
   CommandEmpty,
@@ -15,7 +13,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command"
+} from "@/components/ui/command.jsx" // Proactive fix
 import {
   Popover,
   PopoverContent,
