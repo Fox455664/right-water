@@ -74,7 +74,7 @@ const Navbar = () => {
           {currentUser ? (
             <>
               {isAdmin && (
-                <Link to="/AdminDashboard">
+                <Link to="/admin">
                   <Button aria-label="لوحة التحكم" variant="ghost" className="text-white hover:bg-white/20 px-2 sm:px-3">
                     <ShieldCheck size={20} />
                     <span className="ml-1 hidden md:inline">التحكم</span>
