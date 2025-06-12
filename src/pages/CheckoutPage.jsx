@@ -1,4 +1,5 @@
 // src/pages/CheckoutPage.jsx
+// (النسخة القديمة المبسطة مع إصلاح جزء إرسال الإيميلات)
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -10,24 +11,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { db, collection, addDoc, Timestamp, doc, writeBatch, increment } from '@/firebase';
 import { useCart } from '@/contexts/CartContext';
-import { Loader2, Lock, ShoppingBag } from 'lucide-react';
+import { Loader2, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useAuth } from '@/contexts/AuthContext';
-import { Combobox } from '@/components/ui/combobox';
-import { countries } from '@/lib/countries';
+import { useAuth } from '@/contexts/AuthContext.jsx';
+import { Combobox } from '@/components/ui/combobox.jsx';
+import { countries } from '@/lib/countries.js';
 
-// دالة التحقق المعدلة لتكون أكثر مرونة
 const validateForm = (formData) => {
   const errors = {};
   if (!/^[a-zA-Z\u0600-\u06FF\s-']+$/.test(formData.firstName.trim())) errors.firstName = "الاسم الأول يجب أن يحتوي على حروف فقط.";
   if (!/^[a-zA-Z\u0600-\u06FF\s-']+$/.test(formData.lastName.trim())) errors.lastName = "الاسم الأخير يجب أن يحتوي على حروف فقط.";
   if (!/^\S+@\S+\.\S+$/.test(formData.email)) errors.email = "صيغة البريد الإلكتروني غير صحيحة.";
-  // تحقق مرن من رقم الهاتف
   if (!/^\+?[0-9\s-()]{7,15}$/.test(formData.phone)) errors.phone = "صيغة رقم الهاتف غير صحيحة.";
   if (formData.address.trim().length < 10) errors.address = "العنوان يجب ألا يقل عن 10 أحرف.";
   if (formData.city.trim().length < 2) errors.city = "اسم المدينة يجب ألا يقل عن حرفين.";
   if (!formData.country) errors.country = "يرجى اختيار دولة.";
-  // جعل الرمز البريدي اختياريًا ولكن إذا تم إدخاله، يتم التحقق منه
   if (formData.postalCode && !/^[a-zA-Z0-9\s-]{3,10}$/.test(formData.postalCode)) {
       errors.postalCode = "الرمز البريدي غير صالح.";
   }
@@ -36,7 +34,6 @@ const validateForm = (formData) => {
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { toast } = useToast();
   const { cartItems, cartTotal, clearCart } = useCart();
   const { currentUser } = useAuth();
@@ -44,7 +41,7 @@ const CheckoutPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', email: '', phone: '',
-    address: '', city: '', country: 'EG', // الدولة الافتراضية مصر
+    address: '', city: '', country: 'EG', 
     postalCode: '', paymentMethod: 'cod'
   });
   const [formErrors, setFormErrors] = useState({});
@@ -85,7 +82,7 @@ const CheckoutPage = () => {
   };
 
   const handleCountryChange = (value) => {
-    setFormData(prev => ({ ...prev, country: value, postalCode: '' })); // تفريغ الرمز البريدي عند تغيير الدولة
+    setFormData(prev => ({ ...prev, country: value, postalCode: '' }));
     if (formErrors.country) {
       setFormErrors(prev => ({ ...prev, country: null, postalCode: null }));
     }
@@ -134,7 +131,7 @@ const CheckoutPage = () => {
       });
       await batch.commit();
 
-      // --- كود إرسال الإيميلات ---
+      // --- 🔥🔥 بداية كود الإيميلات المُحسّن 🔥🔥 ---
       const orderItemsHtml = cartItems.map(item => `
         <tr>
           <td style="padding:8px; border-bottom:1px solid #ddd;">${item.name}</td>
@@ -143,32 +140,38 @@ const CheckoutPage = () => {
         </tr>
       `).join('');
 
-      const emailParams = {
+      // البيانات الأساسية المشتركة للإيميلين
+      const baseEmailParams = {
         to_name: orderData.shipping.fullName,
-        to_email: orderData.userEmail,
         order_id: docRef.id,
+        order_subtotal: cartTotal.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
+        order_shipping_cost: shippingCost.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
         order_total: totalAmount.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
         order_address: `${orderData.shipping.address}, ${orderData.shipping.city}, ${orderData.shipping.country}`,
         order_items_html: orderItemsHtml,
         customer_phone: orderData.shipping.phone,
         payment_method: "الدفع عند الاستلام",
-        order_subtotal: cartTotal.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
-        order_shipping_cost: shippingCost.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
         from_name: "متجر Right Water",
         support_email: "rightwater156@gmail.com",
-        client_email: orderData.userEmail, // لإيميل التاجر
-        reply_to: orderData.userEmail,
       };
 
       try {
+        // Public Key بتاعك من حساب EmailJS
+        const YOUR_PUBLIC_KEY = 'xpSKf6d4h11LzEOLz'; // تأكد من أن هذا هو المفتاح الصحيح
+        
         // إرسال الإيميل للعميل
-        await emailjs.send('service_0p2k5ih', 'template_bu792mf', emailParams, 'xpSKf6d4h11LzEOLz');
+        const clientParams = { ...baseEmailParams, to_email: orderData.userEmail, reply_to: "rightwater156@gmail.com" };
+        await emailjs.send('service_0p2k5ih', 'template_bu792mf', clientParams, YOUR_PUBLIC_KEY);
+        
         // إرسال الإيميل للتاجر
-        await emailjs.send('service_0p2k5ih', 'template_tboeo2t', { ...emailParams, to_email: "rightwater156@gmail.com"}, 'xpSKf6d4h11LzEOLz');
+        const merchantParams = { ...baseEmailParams, to_email: "rightwater156@gmail.com", client_email: orderData.userEmail, reply_to: orderData.userEmail };
+        await emailjs.send('service_0p2k5ih', 'template_tboeo2t', merchantParams, YOUR_PUBLIC_KEY);
+
       } catch (emailError) {
         console.error("فشل إرسال الإيميل:", emailError);
         // لا توقف العملية بسبب فشل الإيميل، لكن يمكنك تسجيل الخطأ
       }
+      // --- 🔥🔥 نهاية كود الإيميلات المُحسّن 🔥🔥 ---
       
       clearCart();
       toast({ title: "🎉 تم إرسال طلبك بنجاح!", description: `شكراً لك. رقم طلبك هو: ${docRef.id}`, className: "bg-green-500 text-white", duration: 7000 });
