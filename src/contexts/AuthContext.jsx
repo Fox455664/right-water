@@ -1,9 +1,9 @@
-// src/contexts/AuthContext.js
+// src/contexts/AuthContext.jsx (النسخة النهائية والمعدلة)
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { 
-  onAuthStateChanged, 
-  signOut as firebaseSignOut, 
+import {
+  onAuthStateChanged,
+  signOut as firebaseSignOut,
   sendPasswordResetEmail,
   updatePassword as firebaseUpdatePassword,
   reauthenticateWithCredential,
@@ -12,12 +12,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword
 } from 'firebase/auth';
-import { 
-  doc, 
-  getDoc, 
-  setDoc, 
-  serverTimestamp 
-} from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/firebase';
 import { Loader2 } from 'lucide-react';
 
@@ -30,29 +25,39 @@ export function useAuth() {
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // حالة تحميل واحدة شاملة
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
+      setLoading(true); // نبدأ التحميل عند تغير حالة المستخدم
       if (user) {
+        // إذا وجد مستخدم، نقوم بتعيينه وجلب صلاحياته
+        setCurrentUser(user);
         try {
-          const adminDoc = await getDoc(doc(db, "admins", user.uid));
-          setIsAdmin(adminDoc.exists());
+          // 🔥🔥 الكود الأساسي للتحقق من صلاحيات الأدمن 🔥🔥
+          // نجلب الـ ID token الخاص بالمستخدم ونجبره على التحديث
+          // هذا يضمن أننا نحصل على أحدث Custom Claims
+          const idTokenResult = await user.getIdTokenResult(true);
+          
+          // نتحقق من وجود claim اسمه admin وقيمته true
+          setIsAdmin(!!idTokenResult.claims.admin);
+          
         } catch (error) {
-          console.error("خطأ في التحقق من الصلاحيات:", error);
+          console.error("خطأ في التحقق من صلاحيات الأدمن:", error);
           setIsAdmin(false);
         }
       } else {
+        // إذا لم يكن هناك مستخدم، نعيد كل شيء لوضعه الافتراضي
+        setCurrentUser(null);
         setIsAdmin(false);
       }
-      setLoading(false);
+      setLoading(false); // انتهى التحميل
     });
+
     return () => unsubscribe();
   }, []);
 
-  // --- دوال المصادقة ---
-
+  // --- دوال المصادقة (لا يوجد تغيير هنا) ---
   const signUp = async (email, password, displayName) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
@@ -62,9 +67,9 @@ export function AuthProvider({ children }) {
       displayName: displayName,
       email: user.email,
       createdAt: serverTimestamp(),
-      role: 'user'
+      role: 'user' // تعيين دور افتراضي
     });
-    setCurrentUser(auth.currentUser);
+    // لا حاجة لـ setCurrentUser هنا، onAuthStateChanged ستقوم بذلك
     return user;
   };
 
@@ -78,7 +83,7 @@ export function AuthProvider({ children }) {
 
   const sendPasswordReset = (email) => {
     return sendPasswordResetEmail(auth, email, {
-      url: `${window.location.origin}/login` // يوجه المستخدم لصفحة الدخول بعد إعادة التعيين
+      url: `${window.location.origin}/login`
     });
   };
 
@@ -88,24 +93,12 @@ export function AuthProvider({ children }) {
     setCurrentUser({ ...auth.currentUser });
   };
   
-  // --- بداية الدالة الجديدة والمحسّنة لتغيير كلمة المرور ---
-  /**
-   * دالة آمنة لتغيير كلمة المرور.
-   * تقوم أولاً بإعادة مصادقة المستخدم ثم تغيير كلمة المرور.
-   */
   const reauthenticateAndChangePassword = async (currentPassword, newPassword) => {
     if (!currentUser) throw new Error("No user is currently signed in.");
-    
-    // 1. إنشاء "بيانات اعتماد" باستخدام كلمة المرور الحالية
     const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
-    
-    // 2. إعادة المصادقة باستخدام بيانات الاعتماد هذه
     await reauthenticateWithCredential(currentUser, credential);
-    
-    // 3. إذا نجحت الخطوة السابقة، قم بتحديث كلمة المرور
     await firebaseUpdatePassword(currentUser, newPassword);
   };
-  // --- نهاية الدالة الجديدة ---
 
   // تجميع كل القيم والدوال
   const value = {
@@ -117,14 +110,15 @@ export function AuthProvider({ children }) {
     signOut,
     sendPasswordReset,
     updateUserProfile,
-    reauthenticateAndChangePassword, // <-- الدالة الجديدة بدلاً من الدالتين القديمتين
+    reauthenticateAndChangePassword,
   };
 
+  // لا نعرض أي شيء أثناء التحميل الأولي
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
-        <p className="ml-4 text-xl text-foreground">جاري تحميل بيانات المستخدم...</p>
+        <p className="ml-4 text-xl text-foreground">جاري التحميل...</p>
       </div>
     );
   }
