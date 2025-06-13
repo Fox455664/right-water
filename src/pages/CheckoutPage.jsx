@@ -155,7 +155,7 @@ const CheckoutPage = () => {
         };
   
         // البيانات الصحيحة من حسابك
-        const SERVICE_ID = "service_wfspsdc";
+        const SERVICE_ID = "service_64z3nuk";
         const CLIENT_TEMPLATE_ID = "template_12584ol";
         const MERCHANT_TEMPLATE_ID = "template_6dk4ib8";
         const PUBLIC_KEY = "Yv-DxRXZ5X9ZmSg3K";
