@@ -132,8 +132,8 @@ function App() {
             
             {/* ======================= مسارات لوحة التحكم (منفصلة تماماً) ======================= */}
             {/* 🔥🔥 تعديل مسار لوحة التحكم الرئيسي هنا 🔥🔥 */}
-            <Route path="/admin" element={<ProtectedRoute adminOnly={true}><AdminLayout /></ProtectedRoute>}>
-              <Route index element={<AdminDashboardPage />} />
+            <Route path="/AdminDashboard" element={<ProtectedRoute adminOnly={true}><AdminLayout /></ProtectedRoute>}>
+              <Route index element={<admin />} />
               <Route path="orders" element={<OrderManagement />} />
               <Route path="products" element={<ProductManagement />} />
               <Route path="users" element={<UserManagement />} />
