@@ -114,7 +114,7 @@ export function AuthProvider({ children }) {
   };
 
   // لا نعرض أي شيء أثناء التحميل الأولي
-  if (loading) {
+  if (loading && !currentUser) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -125,7 +125,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
 }
