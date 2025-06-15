@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext.jsx';
+// 🔥🔥 تم تعديل هذا السطر وإضافة 'query' 🔥🔥
 import { db, collection, query, where, onSnapshot, orderBy } from '@/firebase';
 import { Button } from '@/components/ui/button.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
@@ -41,14 +42,23 @@ const UserOrdersPage = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!currentUser) return;
+        if (!currentUser) {
+            setLoading(false); // أوقف التحميل إذا لم يكن هناك مستخدم
+            return;
+        }
         setLoading(true);
+        // بناء الاستعلام بشكل صحيح
         const q = query(collection(db, 'orders'), where('userId', '==', currentUser.uid), orderBy('createdAt', 'desc'));
+        
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const userOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setOrders(userOrders);
             setLoading(false);
-        }, () => setLoading(false));
+        }, (error) => {
+            console.error("Error fetching user orders: ", error);
+            setLoading(false);
+        });
+        
         return () => unsubscribe();
     }, [currentUser]);
 
@@ -75,7 +85,8 @@ const UserOrdersPage = () => {
                                     <div className="text-left">
                                         <p className="font-bold">{formatPrice(order.total)}</p>
                                         <Button asChild variant="link" className="p-0 h-auto text-primary">
-                                            <Link to={`/profile/orders/${order.id}`}>عرض التفاصيل</Link>
+                                            {/* 🔥🔥 تعديل مهم هنا لربط الصفحة الصحيحة 🔥🔥 */}
+                                            <Link to={`/order/${order.id}`}>عرض التفاصيل</Link>
                                         </Button>
                                     </div>
                                 </div>
