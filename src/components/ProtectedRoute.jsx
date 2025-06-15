@@ -1,35 +1,42 @@
-// src/components/ProtectedRoute.jsx (النسخة النهائية)
+// src/components/auth/ProtectedRoute.jsx
 
 import React from 'react';
-import { Navigate, useLocation, Outlet } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth'; // سنقوم بإنشاء هذا الهوك المخصص
 import { Loader2 } from 'lucide-react';
 
-const ProtectedRoute = ({ adminOnly = false }) => {
-  const { currentUser, isAdmin, loading } = useAuth();
-  const location = useLocation();
+/**
+ * @param {{ requiredRole: 'admin' | 'user' }} props
+ * props.requiredRole: يحدد الصلاحية المطلوبة للوصول ('admin' أو 'user')
+ */
+const ProtectedRoute = ({ requiredRole }) => {
+  const { user, isAdmin, loading } = useAuth();
 
+  // الحالة 1: جاري التحقق من حالة المصادقة (Loading)
+  // نعرض شاشة تحميل لمنع الوميض (flickering) أثناء إعادة التوجيه
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-background">
-        <Loader2 className="h-16 w-16 animate-spin text-primary" />
-        <p className="mt-4 text-xl text-foreground">جاري التحقق...</p>
+      <div className="flex items-center justify-center h-screen w-screen">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
 
-  // إذا لم يكن هناك مستخدم مسجل، اذهب لصفحة الدخول
-  if (!currentUser) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+  // الحالة 2: المستخدم غير مسجل دخوله
+  if (!user) {
+    // أعد توجيه المستخدم إلى صفحة تسجيل الدخول واحفظ المسار الذي كان يحاول الوصول إليه
+    return <Navigate to="/login" replace />;
   }
 
-  // إذا كانت الصفحة للأدمن فقط والمستخدم الحالي ليس أدمن، اذهب للصفحة الرئيسية
-  if (adminOnly && !isAdmin) {
+  // الحالة 3: المسار يتطلب صلاحية 'admin' والمستخدم ليس أدمن
+  if (requiredRole === 'admin' && !isAdmin) {
+    // المستخدم مسجل دخوله لكنه ليس أدمن، أعد توجيهه إلى الصفحة الرئيسية أو صفحة خطأ
     return <Navigate to="/" replace />;
   }
   
-  // إذا تم تجاوز كل عمليات التحقق، اعرض المكونات الفرعية
-  return <Outlet />; 
+  // إذا كانت كل الشروط متحققة، اسمح بعرض الصفحة المطلوبة
+  // <Outlet /> هو المكان الذي سيتم فيه عرض المكون المحمي (مثل AdminDashboardPage)
+  return <Outlet />;
 };
 
 export default ProtectedRoute;
