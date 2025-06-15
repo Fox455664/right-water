@@ -1,3 +1,5 @@
+// src/pages/ProductsPage.jsx (النسخة الصحيحة)
+
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -5,9 +7,10 @@ import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Search, Filter, Tag, AlertTriangle, Frown, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import ProductCard from '@/components/ProductCard'; // تأكد إن هذا المكون موجود
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/firebase.js'; // عدّل هذا المسار حسب مكان ملف firebaseConfig.js عندك
+import ProductCard from '@/components/ProductCard';
+
+// 🔥🔥 الخطوة 1: تعديل جملة الاستيراد لتكون من مصدر واحد 🔥🔥
+import { db, collection, getDocs, query, orderBy } from '@/firebase.js';
 
 const ProductsPage = () => {
   const [products, setProducts] = useState([]);
@@ -29,26 +32,32 @@ const ProductsPage = () => {
       setLoading(true);
       setError(null);
       try {
-        const productsCol = collection(db, 'products');
-        const productsSnapshot = await getDocs(productsCol);
+        // 🔥🔥 الخطوة 2: استخدام query و orderBy لجلب المنتجات مرتبة 🔥🔥
+        const productsQuery = query(collection(db, 'products'), orderBy('name', 'asc'));
+        const productsSnapshot = await getDocs(productsQuery);
+        
         const productsList = productsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         }));
+        
         if (productsList.length === 0) {
           setError("لا توجد منتجات متاحة حالياً. يرجى المحاولة مرة أخرى لاحقاً.");
         }
         setProducts(productsList);
+
       } catch (err) {
         setError("حدث خطأ أثناء جلب المنتجات.");
         console.error("Firestore fetch error:", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchProducts();
   }, []);
 
+  // باقي الكود يظل كما هو لأنه يتعامل مع الفلترة ولا يسبب الخطأ
   useEffect(() => {
     let tempProducts = [...products];
 
@@ -91,6 +100,7 @@ const ProductsPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* ... باقي كود JSX يظل كما هو بدون تغيير ... */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
