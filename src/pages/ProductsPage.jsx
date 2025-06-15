@@ -1,4 +1,4 @@
-// src/pages/ProductsPage.jsx (النسخة الصحيحة)
+// src/pages/ProductsPage.jsx (النسخة الكاملة والمُصححة)
 
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { Search, Filter, Tag, AlertTriangle, Frown, Loader2 } from 'lucide-react
 import { motion, AnimatePresence } from 'framer-motion';
 import ProductCard from '@/components/ProductCard';
 
-// 🔥🔥 الخطوة 1: تعديل جملة الاستيراد لتكون من مصدر واحد 🔥🔥
+// 🔥🔥 جملة الاستيراد الصحيحة 🔥🔥
 import { db, collection, getDocs, query, orderBy } from '@/firebase.js';
 
 const ProductsPage = () => {
@@ -32,7 +32,7 @@ const ProductsPage = () => {
       setLoading(true);
       setError(null);
       try {
-        // 🔥🔥 الخطوة 2: استخدام query و orderBy لجلب المنتجات مرتبة 🔥🔥
+        // استخدام query و orderBy لجلب المنتجات مرتبة
         const productsQuery = query(collection(db, 'products'), orderBy('name', 'asc'));
         const productsSnapshot = await getDocs(productsQuery);
         
@@ -57,7 +57,7 @@ const ProductsPage = () => {
     fetchProducts();
   }, []);
 
-  // باقي الكود يظل كما هو لأنه يتعامل مع الفلترة ولا يسبب الخطأ
+  // ... باقي الكود يظل كما هو ...
   useEffect(() => {
     let tempProducts = [...products];
 
@@ -100,7 +100,6 @@ const ProductsPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* ... باقي كود JSX يظل كما هو بدون تغيير ... */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
