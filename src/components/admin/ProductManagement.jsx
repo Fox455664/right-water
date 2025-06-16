@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, storage } from '@/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+// 🔥🔥 هنا تم إضافة "query" الناقصة 🔥🔥
 import { collection, doc, updateDoc, addDoc, deleteDoc, runTransaction, onSnapshot, orderBy, query } from 'firebase/firestore';
 import imageCompression from 'browser-image-compression';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table.jsx";
@@ -12,7 +13,7 @@ import { Label } from "@/components/ui/label.jsx";
 import { Textarea } from "@/components/ui/textarea.jsx";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog.jsx";
 import { PlusCircle, Edit, Trash2, Package, Loader2, AlertTriangle, Search, ImagePlus, X, ArrowRight, PackagePlus } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
 import { Progress } from '@/components/ui/progress.jsx';
 
@@ -128,14 +129,15 @@ const ProductManagement = () => {
         }
     };
 
-    const handleDeleteProduct = async (productId) => {
-        try {
-            await deleteDoc(doc(db, 'products', productId));
-            toast({ title: "🗑️ تم حذف المنتج", className: "bg-red-500 text-white" });
-        } catch (err) {
-            toast({ title: "❌ خطأ في الحذف", variant: "destructive" });
-        }
-    };
+    const handleDeleteProduct = async (productId, productName) => {
+     if (!window.confirm(`هل أنت متأكد أنك تريد حذف المنتج "${productName}"؟`)) return;
+    try {
+      await deleteDoc(doc(db, 'products', productId));
+      toast({ title: "🗑️ تم حذف المنتج", className: "bg-red-500 text-white" });
+    } catch (err) {
+      toast({ title: "❌ خطأ في الحذف", description: err.message, variant: "destructive" });
+    }
+  };
 
     const handleUpdateStock = async (e) => {
         e.preventDefault();
@@ -160,6 +162,12 @@ const ProductManagement = () => {
         setCurrentProduct({ ...product, price: product.price.toString(), originalPrice: product.originalPrice ? product.originalPrice.toString() : '' });
         setImagePreview(product.image);
         setIsEditModalOpen(true);
+    };
+
+    const openStockModal = (product) => {
+        setCurrentProduct(product);
+        setStockUpdate({ amount: 0, type: 'add' });
+        setIsStockModalOpen(true);
     };
 
     const renderProductForm = (productData, setProductData, handleSubmit, isEdit = false) => (
