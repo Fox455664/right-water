@@ -1,3 +1,4 @@
+// src/components/Layout.jsx
 
 import React from 'react';
 import Navbar from '@/components/Navbar';
@@ -7,7 +8,8 @@ import { Outlet } from 'react-router-dom';
 
 const Layout = () => {
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    // 🔥🔥 هنا تم إضافة التعديل 🔥🔥
+    <div className="flex flex-col min-h-screen bg-background overflow-x-hidden">
       <Navbar />
       <main className="flex-grow container mx-auto px-4 py-8">
         <Outlet />
