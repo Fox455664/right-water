@@ -1,5 +1,4 @@
 // src/components/admin/UserManagement.jsx
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -17,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label.jsx';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog.jsx';
+
 
 const SUPER_ADMIN_UID = 'hoIGjbMl4AbEEX4LCQeTx8YNfXB2';
 
@@ -98,7 +98,7 @@ const UserManagement = () => {
     try {
       await deleteDoc(doc(db, 'users', currentUser.id));
       toast({ title: "تم حذف المستخدم بنجاح" });
-      await fetchUsers(); // Re-fetch to update the list
+      await fetchUsers();
     } catch (error) {
       console.error("Error deleting user: ", error);
       toast({ title: "خطأ في حذف المستخدم", variant: "destructive" });
@@ -205,43 +205,14 @@ const UserManagement = () => {
                         <DropdownMenuItem onClick={() => handleEditUser(user)}>
                           <Edit2 className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" /> تعديل
                         </DropdownMenuItem>
-
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setCurrentUser(user); }}>
-                                    <KeyRound className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" /> إعادة تعيين كلمة المرور
-                                </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent dir="rtl">
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>إعادة تعيين كلمة المرور</AlertDialogTitle>
-                                    <AlertDialogDescription>هل أنت متأكد أنك تريد إرسال رابط إعادة تعيين كلمة المرور إلى "{currentUser?.email}"؟</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handlePasswordReset} disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin" /> : "إرسال"}</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => {e.preventDefault(); setCurrentUser(user);}}><KeyRound className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" /> إعادة تعيين كلمة المرور</DropdownMenuItem></AlertDialogTrigger>
+                            <AlertDialogContent dir="rtl"><AlertDialogHeader><AlertDialogTitle>إعادة تعيين كلمة المرور</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد أنك تريد إرسال رابط إعادة تعيين كلمة المرور إلى "{currentUser?.email}"؟</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={handlePasswordReset} disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin"/> : "إرسال"}</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
                         </AlertDialog>
-                        
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setCurrentUser(user); }} className="text-red-600 focus:text-red-600 dark:focus:text-red-400">
-                                    <Trash2 className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" /> حذف
-                                </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent dir="rtl">
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>تأكيد الحذف</AlertDialogTitle>
-                                    <AlertDialogDescription>هل أنت متأكد أنك تريد حذف المستخدم "{currentUser?.displayName}"؟ هذا الإجراء لا يمكن التراجع عنه.</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleDeleteUser} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">{isSubmitting ? <Loader2 className="animate-spin" /> : "نعم، قم بالحذف"}</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild><DropdownMenuItem onSelect={(e) => {e.preventDefault(); setCurrentUser(user);}} className="text-red-600 focus:text-red-600 dark:focus:text-red-400"><Trash2 className="mr-2 rtl:ml-2 rtl:mr-0 h-4 w-4" /> حذف</DropdownMenuItem></AlertDialogTrigger>
+                            <AlertDialogContent dir="rtl"><AlertDialogHeader><AlertDialogTitle>تأكيد الحذف</AlertDialogTitle><AlertDialogDescription>هل أنت متأكد أنك تريد حذف المستخدم "{currentUser?.displayName}"؟ هذا الإجراء لا يمكن التراجع عنه.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={handleDeleteUser} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">{isSubmitting ? <Loader2 className="animate-spin"/> : "نعم، قم بالحذف"}</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
                         </AlertDialog>
-
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -272,6 +243,7 @@ const UserManagement = () => {
           <DialogFooter><Button onClick={handleUpdateUser} disabled={isSubmitting}>{isSubmitting ? <Loader2 className="animate-spin" /> : "حفظ التغييرات"}</Button><Button variant="outline" onClick={() => setIsEditModalOpen(false)}>إلغاء</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+      
     </motion.div>
   );
 };
