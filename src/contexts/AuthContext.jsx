@@ -1,4 +1,4 @@
-// src/contexts/AuthContext.jsx (النسخة النهائية والمعدلة)
+// src/contexts/AuthContext.jsx
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
@@ -12,9 +12,9 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword
 } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore'; // updateDoc is needed here
 import { auth, db } from '@/firebase';
-import { Loader2 } from 'lucide-react';
+import LoadingScreen from '@/components/LoadingScreen'; // استيراد شاشة التحميل الجديدة
 
 const AuthContext = createContext();
 
@@ -25,39 +25,28 @@ export function useAuth() {
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true); // حالة تحميل واحدة شاملة
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setLoading(true); // نبدأ التحميل عند تغير حالة المستخدم
       if (user) {
-        // إذا وجد مستخدم، نقوم بتعيينه وجلب صلاحياته
         setCurrentUser(user);
         try {
-          // 🔥🔥 الكود الأساسي للتحقق من صلاحيات الأدمن 🔥🔥
-          // نجلب الـ ID token الخاص بالمستخدم ونجبره على التحديث
-          // هذا يضمن أننا نحصل على أحدث Custom Claims
           const idTokenResult = await user.getIdTokenResult(true);
-          
-          // نتحقق من وجود claim اسمه admin وقيمته true
           setIsAdmin(!!idTokenResult.claims.admin);
-          
         } catch (error) {
           console.error("خطأ في التحقق من صلاحيات الأدمن:", error);
           setIsAdmin(false);
         }
       } else {
-        // إذا لم يكن هناك مستخدم، نعيد كل شيء لوضعه الافتراضي
         setCurrentUser(null);
         setIsAdmin(false);
       }
-      setLoading(false); // انتهى التحميل
+      setTimeout(() => setLoading(false), 2500); 
     });
-
     return () => unsubscribe();
   }, []);
-
-  // --- دوال المصادقة (لا يوجد تغيير هنا) ---
+  
   const signUp = async (email, password, displayName) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
@@ -67,9 +56,8 @@ export function AuthProvider({ children }) {
       displayName: displayName,
       email: user.email,
       createdAt: serverTimestamp(),
-      role: 'user' // تعيين دور افتراضي
+      role: 'customer'
     });
-    // لا حاجة لـ setCurrentUser هنا، onAuthStateChanged ستقوم بذلك
     return user;
   };
 
@@ -87,10 +75,11 @@ export function AuthProvider({ children }) {
     });
   };
 
-  const updateUserProfile = async (updates) => {
-    if (!currentUser) return Promise.reject(new Error("No user is currently signed in."));
-    await updateProfile(currentUser, updates);
-    setCurrentUser({ ...auth.currentUser });
+  // 🔥🔥 الدالة الجديدة لتحديث بيانات المستخدم في Firestore 🔥🔥
+  const updateUserProfileInDb = async (uid, data) => {
+    if (!uid) return;
+    const userRef = doc(db, 'users', uid);
+    return updateDoc(userRef, data);
   };
   
   const reauthenticateAndChangePassword = async (currentPassword, newPassword) => {
@@ -99,8 +88,7 @@ export function AuthProvider({ children }) {
     await reauthenticateWithCredential(currentUser, credential);
     await firebaseUpdatePassword(currentUser, newPassword);
   };
-
-  // تجميع كل القيم والدوال
+  
   const value = {
     currentUser,
     isAdmin,
@@ -109,23 +97,18 @@ export function AuthProvider({ children }) {
     signIn,
     signOut,
     sendPasswordReset,
-    updateUserProfile,
+    updateUserProfileInDb, // استخدام الدالة الجديدة
     reauthenticateAndChangePassword,
+    updateProfile // نمرر دالة updateProfile الأصلية أيضًا
   };
 
-  // لا نعرض أي شيء أثناء التحميل الأولي
-  if (loading && !currentUser) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <Loader2 className="h-16 w-16 animate-spin text-primary" />
-        <p className="ml-4 text-xl text-foreground">جاري التحميل...</p>
-      </div>
-    );
+  if (loading) {
+    return <LoadingScreen />;
   }
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 }
