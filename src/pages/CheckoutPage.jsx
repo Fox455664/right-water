@@ -1,7 +1,7 @@
-// src/pages/CheckoutPage.jsx (النسخة النهائية والمُصححة)
+// src/pages/CheckoutPage.jsx (النسخة النهائية والكاملة)
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import emailjs from '@emailjs/browser';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { db, collection, addDoc, Timestamp, doc, writeBatch, increment } from '@/firebase';
 import { useCart } from '@/contexts/CartContext';
-import { Loader2, Lock } from 'lucide-react';
+import { Loader2, Lock, ArrowRight, ShoppingBag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { Combobox } from '@/components/ui/combobox.jsx';
@@ -34,6 +34,7 @@ const validateForm = (formData) => {
 
 const CheckoutPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { toast } = useToast();
     const { cartItems, cartTotal, clearCart } = useCart();
     const { currentUser } = useAuth();
@@ -51,7 +52,8 @@ const CheckoutPage = () => {
             navigate('/login');
             return;
         }
-        if (cartItems.length === 0 && !isSubmitting) { // نمنع التوجيه إذا كان الطلب قيد التنفيذ
+        // استخدام isSubmitting لمنع التوجيه أثناء عملية إنشاء الطلب
+        if (cartItems.length === 0 && !isSubmitting) {
             toast({
                 title: "سلتك فارغة!",
                 description: "يتم توجيهك لصفحة المنتجات.",
@@ -93,72 +95,103 @@ const CheckoutPage = () => {
     };
   
     const handleSubmit = async (e) => {
-      e.preventDefault();
-      
-      if (!currentUser || cartItems.length === 0) {
-        toast({ title: "لا يمكن إتمام الطلب", description: "المستخدم غير مسجل أو السلة فارغة.", variant: "destructive" });
-        return;
-      }
-  
-      const errors = validateForm(formData);
-      if (Object.keys(errors).length > 0) {
-        setFormErrors(errors);
-        toast({ title: "بيانات غير مكتملة", description: "يرجى مراجعة الحقول التي عليها علامة حمراء.", variant: "destructive" });
-        return;
-      }
-      
-      setIsSubmitting(true);
-      try {
-        const countryLabel = countries.find(c => c.value === formData.country)?.label || formData.country;
-        const orderData = {
-          userId: currentUser.uid,
-          shipping: {
-              fullName: `${formData.firstName.trim()} ${formData.lastName.trim()}`, 
-              phone: formData.phone, 
-              address: formData.address, 
-              city: formData.city, 
-              country: countryLabel,
-              postalCode: formData.postalCode,
-          },
-          userEmail: formData.email,
-          items: cartItems.map(item => ({ id: item.id, name: item.name, quantity: item.quantity, price: item.price, imageUrl: item.image || null })),
-          subtotal: cartTotal,
-          shippingCost: shippingCost,
-          
-          // ======== هذا هو التعديل الحاسم الذي يحل المشكلة ========
-          total: Number(totalAmount),
-          // =======================================================
+        e.preventDefault();
+        
+        if (!currentUser || cartItems.length === 0) {
+            toast({ title: "لا يمكن إتمام الطلب", description: "المستخدم غير مسجل أو السلة فارغة.", variant: "destructive" });
+            return;
+        }
 
-          status: 'pending',
-          paymentMethod: formData.paymentMethod,
-          createdAt: Timestamp.now(),
-        };
+        const errors = validateForm(formData);
+        if (Object.keys(errors).length > 0) {
+            setFormErrors(errors);
+            toast({ title: "بيانات غير مكتملة", description: "يرجى مراجعة الحقول التي عليها علامة حمراء.", variant: "destructive" });
+            return;
+        }
+      
+        setIsSubmitting(true);
+        try {
+            const countryLabel = countries.find(c => c.value === formData.country)?.label || formData.country;
+            const orderData = {
+                userId: currentUser.uid,
+                shipping: {
+                    fullName: `${formData.firstName.trim()} ${formData.lastName.trim()}`, 
+                    phone: formData.phone, 
+                    address: formData.address, 
+                    city: formData.city, 
+                    country: countryLabel,
+                    postalCode: formData.postalCode,
+                },
+                userEmail: formData.email,
+                items: cartItems.map(item => ({ id: item.id, name: item.name, quantity: item.quantity, price: item.price, imageUrl: item.image || null })),
+                subtotal: cartTotal,
+                shippingCost: shippingCost,
+                total: Number(totalAmount),
+                status: 'pending',
+                paymentMethod: formData.paymentMethod,
+                createdAt: Timestamp.now(),
+            };
         
-        const docRef = await addDoc(collection(db, 'orders'), orderData);
+            const docRef = await addDoc(collection(db, 'orders'), orderData);
+            
+            const batch = writeBatch(db);
+            cartItems.forEach(item => {
+                const productRef = doc(db, "products", item.id);
+                batch.update(productRef, { stock: increment(-item.quantity) });
+            });
+            await batch.commit();
+  
+            // --- إرسال الإيميلات ---
+            const orderItemsHtml = cartItems.map(item => `
+                <tr>
+                    <td style="padding:8px; border-bottom:1px solid #ddd;">${item.name}</td>
+                    <td style="padding:8px; border-bottom:1px solid #ddd; text-align:center;">${item.quantity}</td>
+                    <td style="padding:8px; border-bottom:1px solid #ddd; text-align:right;">${(item.price * item.quantity).toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}</td>
+                </tr>
+            `).join('');
+
+            const baseEmailParams = {
+                to_name: orderData.shipping.fullName,
+                order_id: docRef.id,
+                order_total: totalAmount.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
+                order_address: `${orderData.shipping.address}, ${orderData.shipping.city}, ${orderData.shipping.country}`,
+                order_items_html: orderItemsHtml,
+                customer_phone: orderData.shipping.phone,
+                payment_method: "الدفع عند الاستلام",
+                order_subtotal: cartTotal.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
+                order_shipping_cost: shippingCost.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
+                from_name: "متجر Right Water",
+                support_email: "rightwater156@gmail.com",
+            };
+
+            const SERVICE_ID = "service_64z3nuk";
+            const CLIENT_TEMPLATE_ID = "template_12584ol";
+            const MERCHANT_TEMPLATE_ID = "template_6dk4ib8";
+            const PUBLIC_KEY = "Yv-DxRXZ5X9ZmSg3K";
+
+            try {
+                const clientParams = { ...baseEmailParams, to_email: orderData.userEmail, reply_to: "rightwater156@gmail.com" };
+                await emailjs.send(SERVICE_ID, CLIENT_TEMPLATE_ID, clientParams, PUBLIC_KEY);
+                
+                const merchantParams = { ...baseEmailParams, to_email: "rightwater156@gmail.com", client_email: orderData.userEmail, reply_to: orderData.userEmail };
+                await emailjs.send(SERVICE_ID, MERCHANT_TEMPLATE_ID, merchantParams, PUBLIC_KEY);
+            } catch (emailError) {
+                console.error("فشل إرسال الإيميل:", emailError);
+            }
         
-        const batch = writeBatch(db);
-        cartItems.forEach(item => {
-          const productRef = doc(db, "products", item.id);
-          batch.update(productRef, { stock: increment(-item.quantity) });
-        });
-        await batch.commit();
+            clearCart();
+            toast({ title: "🎉 تم إرسال طلبك بنجاح!", description: `شكراً لك. رقم طلبك هو: ${docRef.id}`, className: "bg-green-500 text-white", duration: 7000 });
+            navigate(`/order-success/${docRef.id}`, { state: { orderData: { id: docRef.id, ...orderData } } });
   
-        // --- إرسال الإيميلات ---
-        // (الكود الخاص بالإيميلات يبقى كما هو)
-  
-        clearCart();
-        toast({ title: "🎉 تم إرسال طلبك بنجاح!", description: `شكراً لك. رقم طلبك هو: ${docRef.id}`, className: "bg-green-500 text-white", duration: 7000 });
-        navigate(`/order-success/${docRef.id}`, { state: { orderData: { id: docRef.id, ...orderData } } });
-  
-      } catch (error) {
-        console.error("Error placing order: ", error);
-        toast({ title: "حدث خطأ", description: "لم نتمكن من إتمام طلبك. يرجى المحاولة لاحقاً.", variant: "destructive" });
-      } finally {
-        setIsSubmitting(false);
-      }
+        } catch (error) {
+            console.error("Error placing order: ", error);
+            toast({ title: "حدث خطأ", description: "لم نتمكن من إتمام طلبك. يرجى المحاولة لاحقاً.", variant: "destructive" });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
   
-    if (cartItems.length === 0) {
+    if (cartItems.length === 0 && !isSubmitting) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
                 <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
