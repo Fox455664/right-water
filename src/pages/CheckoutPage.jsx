@@ -1,7 +1,7 @@
-// src/pages/CheckoutPage.jsx
+// src/pages/CheckoutPage.jsx (النسخة النهائية والمُصححة)
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom'; // تم حذف useLocation
 import emailjs from '@emailjs/browser';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext.jsx';
 import { Combobox } from '@/components/ui/combobox.jsx';
 import { countries } from '@/lib/countries.js';
 
+// دالة التحقق من صحة النموذج
 const validateForm = (formData) => {
     const errors = {};
     if (!/^[a-zA-Z\u0600-\u06FF\s-']+$/.test(formData.firstName.trim())) errors.firstName = "الاسم الأول يجب أن يحتوي على حروف فقط.";
@@ -30,7 +31,6 @@ const validateForm = (formData) => {
     }
     return errors;
 };
-
 
 const CheckoutPage = () => {
     const navigate = useNavigate();
@@ -47,7 +47,12 @@ const CheckoutPage = () => {
     const [formErrors, setFormErrors] = useState({});
   
     useEffect(() => {
-        // تم تبسيط الشرط ليكون أكثر وضوحًا
+        // إذا لم يكن المستخدم مسجلاً، ProtectedRoute سيعيد توجيهه، لكن هذا تحقق إضافي
+        if (!currentUser) {
+            navigate('/login');
+            return;
+        }
+        // إذا كانت السلة فارغة، أعد توجيه المستخدم
         if (cartItems.length === 0) {
             toast({
                 title: "سلتك فارغة!",
@@ -56,7 +61,7 @@ const CheckoutPage = () => {
             });
             navigate('/products');
         }
-    }, [cartItems, navigate, toast]);
+    }, [cartItems, currentUser, navigate, toast]);
     
     useEffect(() => {
       if (currentUser) {
@@ -91,10 +96,11 @@ const CheckoutPage = () => {
   
     const handleSubmit = async (e) => {
       e.preventDefault();
-      // 🔥🔥 إضافة تحقق إضافي هنا لضمان عدم إرسال طلب فارغ 🔥🔥
-      if (cartItems.length === 0) {
-          toast({ title: "لا يمكن إتمام الطلب", description: "سلة التسوق فارغة.", variant: "destructive" });
-          return;
+      
+      // تحقق مزدوج للتأكيد
+      if (!currentUser || cartItems.length === 0) {
+        toast({ title: "لا يمكن إتمام الطلب", description: "المستخدم غير مسجل أو السلة فارغة.", variant: "destructive" });
+        return;
       }
   
       const errors = validateForm(formData);
@@ -108,7 +114,7 @@ const CheckoutPage = () => {
       try {
         const countryLabel = countries.find(c => c.value === formData.country)?.label || formData.country;
         const orderData = {
-          userId: currentUser ? currentUser.uid : null,
+          userId: currentUser.uid,
           shipping: {
               fullName: `${formData.firstName.trim()} ${formData.lastName.trim()}`, 
               phone: formData.phone, 
@@ -136,6 +142,7 @@ const CheckoutPage = () => {
         });
         await batch.commit();
   
+        // --- إرسال الإيميلات ---
         const orderItemsHtml = cartItems.map(item => `
           <tr>
             <td style="padding:8px; border-bottom:1px solid #ddd;">${item.name}</td>
@@ -186,6 +193,7 @@ const CheckoutPage = () => {
       }
     };
   
+    // هذا الشرط يضمن عدم عرض الصفحة فارغة أثناء إعادة التوجيه
     if (cartItems.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
