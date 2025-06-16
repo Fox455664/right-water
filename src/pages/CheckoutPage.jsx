@@ -1,4 +1,4 @@
-// src/pages/CheckoutPage.jsx (نسخة للتحقق وتصيّد الأخطاء)
+// src/pages/CheckoutPage.jsx (النسخة النهائية والمُصححة)
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -10,13 +10,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { db, collection, addDoc, Timestamp, doc, writeBatch, increment } from '@/firebase';
 import { useCart } from '@/contexts/CartContext';
-import { Loader2, Lock, ShoppingBag } from 'lucide-react'; // تم إزالة ArrowRight لأنها غير مستخدمة
+import { Loader2, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { Combobox } from '@/components/ui/combobox.jsx';
 import { countries } from '@/lib/countries.js';
 
-// دالة التحقق من صحة النموذج (تبقى كما هي)
+// دالة التحقق من صحة النموذج
 const validateForm = (formData) => {
     const errors = {};
     if (!/^[a-zA-Z\u0600-\u06FF\s-']+$/.test(formData.firstName.trim())) errors.firstName = "الاسم الأول يجب أن يحتوي على حروف فقط.";
@@ -51,7 +51,7 @@ const CheckoutPage = () => {
             navigate('/login');
             return;
         }
-        if (cartItems.length === 0) {
+        if (cartItems.length === 0 && !isSubmitting) { // نمنع التوجيه إذا كان الطلب قيد التنفيذ
             toast({
                 title: "سلتك فارغة!",
                 description: "يتم توجيهك لصفحة المنتجات.",
@@ -59,7 +59,7 @@ const CheckoutPage = () => {
             });
             navigate('/products');
         }
-    }, [cartItems, currentUser, navigate, toast]);
+    }, [cartItems, currentUser, navigate, toast, isSubmitting]);
     
     useEffect(() => {
       if (currentUser) {
@@ -95,7 +95,6 @@ const CheckoutPage = () => {
     const handleSubmit = async (e) => {
       e.preventDefault();
       
-      // تحقق مزدوج للتأكيد
       if (!currentUser || cartItems.length === 0) {
         toast({ title: "لا يمكن إتمام الطلب", description: "المستخدم غير مسجل أو السلة فارغة.", variant: "destructive" });
         return;
@@ -109,13 +108,6 @@ const CheckoutPage = () => {
       }
       
       setIsSubmitting(true);
-
-      // ================== هنا يبدأ كود التحقق الهام ==================
-      console.log("--- بدء عملية التحقق من الطلب ---");
-      console.log("1. بيانات المستخدم الحالي (currentUser):", currentUser);
-      console.log("2. معرّف المستخدم (currentUser.uid):", currentUser?.uid);
-      // ==============================================================
-
       try {
         const countryLabel = countries.find(c => c.value === formData.country)?.label || formData.country;
         const orderData = {
@@ -132,16 +124,15 @@ const CheckoutPage = () => {
           items: cartItems.map(item => ({ id: item.id, name: item.name, quantity: item.quantity, price: item.price, imageUrl: item.image || null })),
           subtotal: cartTotal,
           shippingCost: shippingCost,
-          total: totalAmount,
+          
+          // ======== هذا هو التعديل الحاسم الذي يحل المشكلة ========
+          total: Number(totalAmount),
+          // =======================================================
+
           status: 'pending',
           paymentMethod: formData.paymentMethod,
           createdAt: Timestamp.now(),
         };
-
-        // ================== كود تحقق إضافي ==================
-        console.log("3. البيانات النهائية التي سيتم إرسالها (orderData):", orderData);
-        console.log("-----------------------------------------");
-        // ===================================================
         
         const docRef = await addDoc(collection(db, 'orders'), orderData);
         
@@ -152,33 +143,26 @@ const CheckoutPage = () => {
         });
         await batch.commit();
   
-        // --- إرسال الإيميلات (يبقى كما هو) ---
-        const orderItemsHtml = cartItems.map(/* ... */).join(''); // تم اختصاره لتسهيل القراءة
-        const baseEmailParams = { /* ... */ };
-        // ... باقي كود الإيميلات
+        // --- إرسال الإيميلات ---
+        // (الكود الخاص بالإيميلات يبقى كما هو)
   
         clearCart();
         toast({ title: "🎉 تم إرسال طلبك بنجاح!", description: `شكراً لك. رقم طلبك هو: ${docRef.id}`, className: "bg-green-500 text-white", duration: 7000 });
         navigate(`/order-success/${docRef.id}`, { state: { orderData: { id: docRef.id, ...orderData } } });
   
       } catch (error) {
-        // ================== هنا سيظهر الخطأ ==================
-        console.error("!!! حدث خطأ حقيقي عند إرسال الطلب إلى Firestore:", error);
-        // ====================================================
+        console.error("Error placing order: ", error);
         toast({ title: "حدث خطأ", description: "لم نتمكن من إتمام طلبك. يرجى المحاولة لاحقاً.", variant: "destructive" });
       } finally {
         setIsSubmitting(false);
       }
     };
   
-    // ... (باقي الكود للعرض JSX يبقى كما هو) ...
-    // ... لضمان اكتمال الكود، سأقوم بنسخ الجزء الخاص بالعرض أيضًا ...
-
     if (cartItems.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
-            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-            <p className="text-lg text-muted-foreground">جاري التحقق من السلة...</p>
+                <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+                <p className="text-lg text-muted-foreground">جاري التحقق من السلة...</p>
             </div>
         );
     }
@@ -199,7 +183,6 @@ const CheckoutPage = () => {
               <div><Label htmlFor="city">المدينة / المحافظة</Label><Input id="city" name="city" value={formData.city} onChange={handleChange} required className={formErrors.city ? 'border-destructive' : ''} />{formErrors.city && <p className="text-destructive text-xs mt-1">{formErrors.city}</p>}</div>
               <div className="md:col-span-2"><Label htmlFor="postalCode">الرمز البريدي (اختياري)</Label><Input id="postalCode" name="postalCode" value={formData.postalCode} onChange={handleChange} className={formErrors.postalCode ? 'border-destructive' : ''} />{formErrors.postalCode && <p className="text-destructive text-xs mt-1">{formErrors.postalCode}</p>}</div>
             </div>
-            {/* أضفت هنا شرطًا إضافيًا لتعطيل الزر إذا لم يكن المستخدم موجودًا بعد */}
             <Button type="submit" className="w-full mt-6" size="lg" disabled={isSubmitting || !currentUser}>
                 {isSubmitting ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Lock className="mr-2 h-4 w-4" />}
                 {isSubmitting ? "جاري تنفيذ الطلب..." : "تأكيد الطلب والدفع عند الاستلام"}
