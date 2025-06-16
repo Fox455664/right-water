@@ -1,7 +1,7 @@
 // src/components/admin/AdminLayout.jsx
 
 import React from 'react';
-// 🔥🔥 هذا هو السطر الذي تم إضافته لإصلاح المشكلة 🔥🔥
+// 🔥🔥 هذا هو السطر الذي تم تصحيحه لضمان استيراد كل ما هو مطلوب 🔥🔥
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { LayoutDashboard, Package, ListOrdered, Users, Settings, Home } from 'lucide-react';
 
@@ -44,6 +44,7 @@ const AdminLayout = () => {
         </div>
       </aside>
 
+      {/* 🔥🔥 هنا تم إضافة Outlet لعرض محتوى الصفحات الفرعية 🔥🔥 */}
       <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
         <Outlet />
       </main>
