@@ -2,9 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import { db } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore'; // Import only what's needed
-import { updateProfile } from 'firebase/auth';
 import { Button } from '@/components/ui/button.jsx';
 import { Input } from '@/components/ui/input.jsx';
 import { Label } from '@/components/ui/label.jsx';
@@ -13,7 +10,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
 
 const UserProfilePage = () => {
-    const { currentUser } = useAuth();
+    // 🔥🔥 التعديل هنا: استيراد الدوال الصحيحة 🔥🔥
+    const { currentUser, updateProfile, updateUserProfileInDb } = useAuth();
     const { toast } = useToast();
     const [isUpdating, setIsUpdating] = useState(false);
     const [formData, setFormData] = useState({
@@ -42,15 +40,16 @@ const UserProfilePage = () => {
         }
         setIsUpdating(true);
         try {
+          // تحديث الاسم في Authentication
           if (currentUser.displayName !== formData.name) {
             await updateProfile(currentUser, { displayName: formData.name });
           }
     
-          const userDocRef = doc(db, 'users', currentUser.uid);
-          await updateDoc(userDocRef, {
+          // تحديث البيانات في Firestore
+          await updateUserProfileInDb(currentUser.uid, {
             displayName: formData.name,
             phone: formData.phone,
-          }, { merge: true });
+          });
     
           toast({ title: "تم التحديث", description: "تم حفظ معلوماتك بنجاح." });
         } catch (error) {
