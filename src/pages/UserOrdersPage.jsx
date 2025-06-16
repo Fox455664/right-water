@@ -1,12 +1,10 @@
-// src/pages/UserOrdersPage.jsx
+// src/pages/UserOrdersPage.jsx (النسخة النهائية والمُصححة)
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-// 🔥🔥 تم تعديل هذا السطر وإضافة 'query' 🔥🔥
-import { db } from '@/firebase';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { db, collection, query, where, onSnapshot, orderBy } from '@/firebase';
 import { Button } from '@/components/ui/button.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card.jsx';
@@ -30,7 +28,7 @@ const getStatusInfo = (status) => {
         pending: { label: "قيد المراجعة", color: "bg-yellow-100 dark:bg-yellow-900/50", textColor: "text-yellow-800 dark:text-yellow-300" },
         processing: { label: "قيد المعالجة", color: "bg-blue-100 dark:bg-blue-900/50", textColor: "text-blue-800 dark:text-blue-300" },
         shipped: { label: "تم الشحن", color: "bg-sky-100 dark:bg-sky-900/50", textColor: "text-sky-800 dark:text-sky-300" },
-        completed: { label: "مكتمل", color: "bg-green-100 dark:bg-green-900/50", textColor: "text-green-800 dark:text-green-300" },
+        delivered: { label: "تم التوصيل", color: "bg-green-100 dark:bg-green-900/50", textColor: "text-green-800 dark:text-green-300" }, // تعديل هنا
         cancelled: { label: "ملغي", color: "bg-red-100 dark:bg-red-900/50", textColor: "text-red-800 dark:text-red-300" },
         'on-hold': { label: "في الانتظار", color: "bg-orange-100 dark:bg-orange-900/50", textColor: "text-orange-800 dark:text-orange-300" },
     };
@@ -44,11 +42,10 @@ const UserOrdersPage = () => {
 
     useEffect(() => {
         if (!currentUser) {
-            setLoading(false); // أوقف التحميل إذا لم يكن هناك مستخدم
+            setLoading(false);
             return;
         }
         setLoading(true);
-        // بناء الاستعلام بشكل صحيح
         const q = query(collection(db, 'orders'), where('userId', '==', currentUser.uid), orderBy('createdAt', 'desc'));
         
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -86,8 +83,8 @@ const UserOrdersPage = () => {
                                     <div className="text-left">
                                         <p className="font-bold">{formatPrice(order.total)}</p>
                                         <Button asChild variant="link" className="p-0 h-auto text-primary">
-                                            {/* 🔥🔥 تعديل مهم هنا لربط الصفحة الصحيحة 🔥🔥 */}
-                                            <Link to={`/order/${order.id}`}>عرض التفاصيل</Link>
+                                            {/* 🔥🔥 هنا تم تصحيح الرابط 🔥🔥 */}
+                                            <Link to={`/profile/orders/${order.id}`}>عرض التفاصيل</Link>
                                         </Button>
                                     </div>
                                 </div>
