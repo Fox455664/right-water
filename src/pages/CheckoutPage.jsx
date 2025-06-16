@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { db, collection, addDoc, Timestamp, doc, writeBatch, increment } from '@/firebase';
 import { useCart } from '@/contexts/CartContext';
-import { Loader2, Lock, ArrowRight, ShoppingBag } from 'lucide-react';
+import { Loader2, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { Combobox } from '@/components/ui/combobox.jsx';
@@ -34,6 +34,7 @@ const validateForm = (formData) => {
 
 const CheckoutPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { toast } = useToast();
     const { cartItems, cartTotal, clearCart } = useCart();
     const { currentUser } = useAuth();
@@ -90,6 +91,17 @@ const CheckoutPage = () => {
   
     const handleSubmit = async (e) => {
       e.preventDefault();
+
+      // --- 🔥🔥 التعديل الأول: التحقق من وجود المستخدم 🔥🔥 ---
+      if (!currentUser) {
+        toast({
+          title: "يرجى تسجيل الدخول أولاً",
+          description: "يجب أن تكون مسجلاً لتتمكن من إتمام الطلب.",
+          variant: "destructive",
+        });
+        return; // أوقف تنفيذ الدالة فوراً
+      }
+      
       if (!cartItems || cartItems.length === 0) return;
   
       const errors = validateForm(formData);
@@ -102,8 +114,10 @@ const CheckoutPage = () => {
       setIsSubmitting(true);
       try {
         const countryLabel = countries.find(c => c.value === formData.country)?.label || formData.country;
+        
+        // الكود هنا يضمن أن currentUser موجود، لذا userId لن يكون null
         const orderData = {
-          userId: currentUser ? currentUser.uid : null,
+          userId: currentUser.uid, 
           shipping: {
               fullName: `${formData.firstName.trim()} ${formData.lastName.trim()}`, 
               phone: formData.phone, 
@@ -131,12 +145,12 @@ const CheckoutPage = () => {
         });
         await batch.commit();
   
-        // --- 🔥🔥 بداية الكود الصحيح 100% 🔥🔥 ---
+        // --- 🔥🔥 التعديل الثاني: تحسين إرسال الإيميل 🔥🔥 ---
         const orderItemsHtml = cartItems.map(item => `
-          <tr>
+          <tr style="text-align: right;">
             <td style="padding:8px; border-bottom:1px solid #ddd;">${item.name}</td>
             <td style="padding:8px; border-bottom:1px solid #ddd; text-align:center;">${item.quantity}</td>
-            <td style="padding:8px; border-bottom:1px solid #ddd; text-align:right;">${(item.price * item.quantity).toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}</td>
+            <td style="padding:8px; border-bottom:1px solid #ddd; text-align:left;">${(item.price * item.quantity).toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' })}</td>
           </tr>
         `).join('');
   
@@ -145,34 +159,49 @@ const CheckoutPage = () => {
           order_id: docRef.id,
           order_total: totalAmount.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
           order_address: `${orderData.shipping.address}, ${orderData.shipping.city}, ${orderData.shipping.country}`,
-          order_items_html: orderItemsHtml,
+          order_items_html: `<table style="width:100%; border-collapse:collapse;"><thead><tr style="text-align: right;"><th style="padding:8px; border-bottom:2px solid #000;">المنتج</th><th style="padding:8px; border-bottom:2px solid #000; text-align:center;">الكمية</th><th style="padding:8px; border-bottom:2px solid #000; text-align:left;">السعر</th></tr></thead><tbody>${orderItemsHtml}</tbody></table>`,
           customer_phone: orderData.shipping.phone,
           payment_method: "الدفع عند الاستلام",
           order_subtotal: cartTotal.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
           order_shipping_cost: shippingCost.toLocaleString('ar-EG', { style: 'currency', currency: 'EGP' }),
           from_name: "متجر Right Water",
-          support_email: "rightwater156@gmail.com",
         };
   
-        // البيانات الصحيحة من حسابك
+        // بياناتك الخاصة بـ EmailJS
         const SERVICE_ID = "service_64z3nuk";
         const CLIENT_TEMPLATE_ID = "template_12584ol";
         const MERCHANT_TEMPLATE_ID = "template_6dk4ib8";
         const PUBLIC_KEY = "Yv-DxRXZ5X9ZmSg3K";
   
-        try {
-          // إرسال الإيميل للعميل
-          const clientParams = { ...baseEmailParams, to_email: orderData.userEmail, reply_to: "rightwater156@gmail.com" };
-          await emailjs.send(SERVICE_ID, CLIENT_TEMPLATE_ID, clientParams, PUBLIC_KEY);
-          
-          // إرسال الإيميل للتاجر
-          const merchantParams = { ...baseEmailParams, to_email: "rightwater156@gmail.com", client_email: orderData.userEmail, reply_to: orderData.userEmail };
-          await emailjs.send(SERVICE_ID, MERCHANT_TEMPLATE_ID, merchantParams, PUBLIC_KEY);
+        // إرسال الإيميلات بالتوازي لتحسين الأداء
+        const sendEmails = async () => {
+          try {
+            // إرسال الإيميل للعميل
+            const clientParams = { 
+              ...baseEmailParams, 
+              to_email: orderData.userEmail, 
+              reply_to: "rightwater156@gmail.com" // اجعل الرد يذهب للتاجر
+            };
+            await emailjs.send(SERVICE_ID, CLIENT_TEMPLATE_ID, clientParams, PUBLIC_KEY);
+            console.log('تم إرسال الإيميل للعميل بنجاح.');
+            
+            // إرسال الإيميل للتاجر
+            const merchantParams = { 
+              ...baseEmailParams, 
+              to_email: "rightwater156@gmail.com", // إيميل التاجر
+              client_email: orderData.userEmail, // إضافة إيميل العميل في القالب
+              reply_to: orderData.userEmail // اجعل الرد يذهب للعميل مباشرة
+            };
+            await emailjs.send(SERVICE_ID, MERCHANT_TEMPLATE_ID, merchantParams, PUBLIC_KEY);
+            console.log('تم إرسال الإيميل للتاجر بنجاح.');
   
-        } catch (emailError) {
-          console.error("فشل إرسال الإيميل:", emailError);
-        }
-        // --- 🔥🔥 نهاية الكود الصحيح 100% 🔥🔥 ---
+          } catch (emailError) {
+            console.error("فشل في إرسال واحد أو كلا الإيميلين:", emailError);
+            // يمكنك هنا إرسال هذا الخطأ إلى خدمة تتبع الأخطاء مثل Sentry
+          }
+        };
+
+        sendEmails(); // استدعاء الدالة بدون انتظارها لتجنب تأخير المستخدم
         
         clearCart();
         toast({ title: "🎉 تم إرسال طلبك بنجاح!", description: `شكراً لك. رقم طلبك هو: ${docRef.id}`, className: "bg-green-500 text-white", duration: 7000 });
@@ -186,6 +215,7 @@ const CheckoutPage = () => {
       }
     };
   
+    // هذا الجزء من الكود لا يحتاج لتعديل
     if (!cartItems.length && !isSubmitting) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
