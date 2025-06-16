@@ -1,3 +1,4 @@
+// src/pages/HomePage.jsx
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
@@ -75,7 +76,7 @@ const HomePage = () => {
       </motion.section>
 
       <section className="container mx-auto px-4">
-        <h2 className="text-4xl font-bold text-center mb-12 text-primary">لماذا تختار رايت واتر؟</h2>
+        <h2 className="text-4xl font-bold text-center mb-12 text-primary">لماذا تختار رايت ووتر؟</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           <FeatureCard 
             icon={<Droplets size={40} />} 
@@ -125,9 +126,10 @@ const HomePage = () => {
         <div className="grid md:grid-cols-3 gap-8">
           <motion.div whileHover={{ y: -10 }} className="cursor-pointer">
             <Card className="overflow-hidden glassmorphism-card">
-              <img  alt="فلتر مياه منزلي" className="w-full h-56 object-cover" src="https://envs.sh/g9Z.jpg" />
+              {/* 🔥🔥 استبدل هذا الرابط بالرابط الذي نسخته من Firebase Storage 🔥🔥 */}
+              <img alt="فلتر مياه منزلي" className="w-full h-56 object-cover" src="https://firebasestorage.googleapis.com/v0/b/YOUR-PROJECT-ID.appspot.com/o/YOUR-IMAGE-NAME.jpg?alt=media&token=YOUR-TOKEN" />
               <CardHeader>
-                <CardTitle className="text-primary">فلتر مياه منزلي</CardTitle>
+                <CardTitle className="text-primary">رايت ووتر بوكس</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription>نظام تنقية متعدد المراحل يوفر مياه شرب نقية وصحية.</CardDescription>
@@ -136,7 +138,7 @@ const HomePage = () => {
           </motion.div>
           <motion.div whileHover={{ y: -10 }} className="cursor-pointer">
             <Card className="overflow-hidden glassmorphism-card">
-              <img  alt="محطة تحلية مياه صغيرة" className="w-full h-56 object-cover" src="https://images.unsplash.com/photo-1614195975309-a3baf592274f" />
+              <img  alt="محطة تحلية مياه صغيرة" className="w-full h-56 object-cover" src="https://images.unsplash.com/photo-1614195975309-a3baf592274f?auto=format&fit=crop&q=80&w=500" />
               <CardHeader>
                 <CardTitle className="text-primary">محطة تحلية صغيرة</CardTitle>
               </CardHeader>
@@ -147,7 +149,7 @@ const HomePage = () => {
           </motion.div>
           <motion.div whileHover={{ y: -10 }} className="cursor-pointer">
             <Card className="overflow-hidden glassmorphism-card">
-              <img  alt="نظام معالجة مياه صناعي" className="w-full h-56 object-cover" src="https://images.unsplash.com/photo-1614195975309-a3baf592274f" />
+              <img  alt="نظام معالجة مياه صناعي" className="w-full h-56 object-cover" src="https://images.unsplash.com/photo-1601680545939-2916143714b9?auto=format&fit=crop&q=80&w=500" />
               <CardHeader>
                 <CardTitle className="text-primary">أنظمة معالجة صناعية</CardTitle>
               </CardHeader>
@@ -159,7 +161,7 @@ const HomePage = () => {
         </div>
         <Link to="/products" className="mt-10 inline-block">
           <Button size="lg" variant="link" className="text-primary text-lg hover:text-secondary">
-            عرض جميع المنتجات &rarr;
+            عرض جميع المنتجات →
           </Button>
         </Link>
       </section>
