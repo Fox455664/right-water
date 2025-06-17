@@ -1,4 +1,4 @@
-// src/components/LoadingScreen.jsx
+// src/components/LoadingScreen.jsx (النسخة النهائية مع تأثير واضح)
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,14 +14,14 @@ const LoadingScreen = () => {
       setProgress(oldProgress => {
         if (oldProgress >= 100) {
           clearInterval(timer);
-          // بعد اكتمال التحميل، نعرض تأثير الطرطشة
-          setTimeout(() => setShowSplash(true), 100);
+          // انتظر قليلاً بعد اكتمال الشريط ثم اعرض الطرطشة
+          setTimeout(() => setShowSplash(true), 300);
           return 100;
         }
         const diff = Math.random() * 10;
         return Math.min(oldProgress + diff, 100);
       });
-    }, 200); // كل 200 مللي ثانية
+    }, 150); // أبطأنا قليلاً ليكون التحميل مرئيًا
 
     return () => clearInterval(timer);
   }, []);
@@ -41,11 +41,12 @@ const LoadingScreen = () => {
   };
   
   const splashVariants = {
-    initial: { scale: 0, opacity: 0 },
+    initial: { scale: 0, opacity: 0, rotate: -90 },
     animate: { 
-      scale: [1, 1.5, 1.2, 2, 0], 
+      scale: [1, 1.5, 1.2, 2.5, 0], 
+      rotate: [0, 15, -15, 0, 0],
       opacity: [1, 0.8, 0.6, 0.2, 0],
-      transition: { duration: 0.6, ease: "easeOut" }
+      transition: { duration: 0.7, ease: "easeOut" }
     }
   };
 
@@ -56,8 +57,7 @@ const LoadingScreen = () => {
                 <motion.div
                     key="loader"
                     initial={{ opacity: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    transition={{ duration: 0.4 }}
+                    exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.3 } }}
                     className="flex flex-col items-center justify-center"
                 >
                     <motion.div 
@@ -65,6 +65,7 @@ const LoadingScreen = () => {
                         initial="hidden"
                         animate="visible"
                         className="flex items-center mb-6"
+                        dir="ltr"
                     >
                         {text.split("").map((char, index) => (
                             <motion.span
@@ -80,8 +81,9 @@ const LoadingScreen = () => {
                     <div className="w-64 h-2 bg-muted rounded-full overflow-hidden">
                         <motion.div
                             className="h-full bg-primary"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${progress}%` }}
+                            style={{ originX: 0 }}
+                            initial={{ scaleX: 0 }}
+                            animate={{ scaleX: progress / 100 }}
                             transition={{ duration: 0.2, ease: "linear" }}
                         />
                     </div>
