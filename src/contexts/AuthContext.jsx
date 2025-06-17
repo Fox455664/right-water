@@ -12,7 +12,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword
 } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore'; // updateDoc is needed here
+import { doc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { auth, db } from '@/firebase';
 import LoadingScreen from '@/components/LoadingScreen'; // استيراد شاشة التحميل الجديدة
 
@@ -42,7 +42,8 @@ export function AuthProvider({ children }) {
         setCurrentUser(null);
         setIsAdmin(false);
       }
-      setTimeout(() => setLoading(false), 2500); 
+      // 🔥🔥 زيادة مدة التأخير هنا للسماح للأنيميشن بالانتهاء 🔥🔥
+      setTimeout(() => setLoading(false), 3500); 
     });
     return () => unsubscribe();
   }, []);
@@ -75,7 +76,6 @@ export function AuthProvider({ children }) {
     });
   };
 
-  // 🔥🔥 الدالة الجديدة لتحديث بيانات المستخدم في Firestore 🔥🔥
   const updateUserProfileInDb = async (uid, data) => {
     if (!uid) return;
     const userRef = doc(db, 'users', uid);
@@ -97,8 +97,7 @@ export function AuthProvider({ children }) {
     signIn,
     signOut,
     sendPasswordReset,
-    updateUserProfileInDb, // استخدام الدالة الجديدة
-    reauthenticateAndChangePassword,
+    updateUserProfileInDb,
     updateProfile // نمرر دالة updateProfile الأصلية أيضًا
   };
 
