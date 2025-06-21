@@ -1,4 +1,4 @@
-// functions/index.js (النسخة النهائية - نظيفة وجاهزة للنشر)
+ // functions/index.js (النسخة النهائية - نظيفة وجاهزة للنشر)
 
 const functions = require("firebase-functions");
 const {GoogleGenerativeAI} = require("@google/generative-ai");
