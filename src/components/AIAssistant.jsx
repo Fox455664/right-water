@@ -1,4 +1,4 @@
-// src/components/AIAssistant.jsx (النسخة النهائية بالتصميم الجذاب)
+// src/components/AIAssistant.jsx (النسخة النهائية مع تعديل اللون)
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,12 +6,6 @@ import { Send, X } from 'lucide-react';
 import AIFloatingButton from './AIFloatingButton';
 import ChatBubble from './ChatBubble';
 import { Button } from '@/components/ui/button';
-
-import { getFunctions, httpsCallable } from "firebase/functions";
-
-const functions = getFunctions();
-const askGemini = httpsCallable(functions, 'askGemini');
-
 
 const AIAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -35,9 +29,24 @@ const AIAssistant = () => {
     setInputValue('');
     setIsLoading(true);
 
+    const functionUrl = 'https://us-central1-right-water.cloudfunctions.net/askGemini';
+
     try {
-      const result = await askGemini({ prompt: userMessage });
-      const aiResponse = result.data.text;
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: userMessage }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Server error');
+      }
+
+      const result = await response.json();
+      const aiResponse = result.text;
       
       setMessages(prev => [...prev, { sender: 'ai', text: aiResponse }]);
 
@@ -64,8 +73,10 @@ const AIAssistant = () => {
           >
             {/* Header */}
             <header className="flex items-center justify-between p-4 border-b border-white/10 flex-shrink-0">
-              <h3 className="font-bold text-lg text-primary-foreground">مساعد رايت ووتر الذكي</h3>
-              <button onClick={() => setIsOpen(false)} className="p-1 rounded-full text-primary-foreground/70 hover:bg-white/20 hover:text-white transition-colors">
+              {/* ===== السطر الذي تم تعديله ===== */}
+              <h3 className="font-bold text-lg text-black">مساعد رايت ووتر الذكي</h3>
+              
+              <button onClick={() => setIsOpen(false)} className="p-1 rounded-full text-black/70 hover:bg-black/10 hover:text-black transition-colors">
                 <X size={20} />
               </button>
             </header>
