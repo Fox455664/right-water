@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const ContactPage = () => {
-  // لم نعد بحاجة لـ useToast أو حالة الإرسال اليدوية لأن Formspree سيتولى الأمر
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -22,27 +21,27 @@ const ContactPage = () => {
   };
 
   const contactInfo = [
-  { 
-    icon: <Building className="h-8 w-8 text-primary" />, 
-    title: "المقر الرئيسي", 
-    details: ["مدينة أجا - محافظة الدقهلية"] 
-  },
-  { 
-    icon: <Phone className="h-8 w-8 text-primary" />, 
-    title: "الهاتف (الخط الساخن)", 
-    details: ["0111-776-7717"] 
-  },
-  { 
-    icon: <Mail className="h-8 w-8 text-primary" />, 
-    title: "البريد الإلكتروني", 
-    details: ["rightwater156@gmail.com"] 
-  },
-  { 
-    icon: <Clock className="h-8 w-8 text-primary" />, 
-    title: "ساعات العمل", 
-    details: ["السبت - الخميس: 9 صباحًا - 5 مساءً", "الجمعة: مغلق"] 
-  },
-];
+    { 
+      icon: <Building className="h-8 w-8 text-primary" />, 
+      title: "المقر الرئيسي", 
+      details: ["مدينة أجا - محافظة الدقهلية"] 
+    },
+    { 
+      icon: <Phone className="h-8 w-8 text-primary" />, 
+      title: "الهاتف (الخط الساخن)", 
+      details: ["+20 11 17767717"] 
+    },
+    { 
+      icon: <Mail className="h-8 w-8 text-primary" />, 
+      title: "البريد الإلكتروني", 
+      details: ["rightwater156@gmail.com", "بريد الدعم"] 
+    },
+    { 
+      icon: <Clock className="h-8 w-8 text-primary" />, 
+      title: "ساعات العمل", 
+      details: ["السبت - الخميس: 9 صباحًا - 5 مساءً", "الجمعة: مغلق"] 
+    },
+  ];
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -93,8 +92,6 @@ const ContactPage = () => {
               <CardTitle className="text-3xl font-bold text-primary text-center">أرسل لنا رسالة</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              {/* ===================== بداية التعديل المهم ===================== */}
-              {/* استخدمنا وسم <form> العادي بدلاً من form مع دالة handleSubmit */}
               <form 
                 action="https://formspree.io/f/xvgpydyg" 
                 method="POST" 
@@ -104,7 +101,7 @@ const ContactPage = () => {
                   <Label htmlFor="name" className="text-foreground font-medium">الاسم الكامل</Label>
                   <Input 
                     type="text" 
-                    name="name" // يجب أن يكون name موجوداً لكي يرسله Formspree
+                    name="name"
                     id="name" 
                     value={formData.name} 
                     onChange={handleChange} 
@@ -117,7 +114,7 @@ const ContactPage = () => {
                   <Label htmlFor="email" className="text-foreground font-medium">البريد الإلكتروني</Label>
                   <Input 
                     type="email" 
-                    name="email" // يجب أن يكون name موجوداً
+                    name="email"
                     id="email" 
                     value={formData.email} 
                     onChange={handleChange} 
@@ -130,7 +127,7 @@ const ContactPage = () => {
                   <Label htmlFor="subject" className="text-foreground font-medium">الموضوع</Label>
                   <Input 
                     type="text" 
-                    name="subject" // يجب أن يكون name موجوداً
+                    name="subject"
                     id="subject" 
                     value={formData.subject} 
                     onChange={handleChange} 
@@ -142,7 +139,7 @@ const ContactPage = () => {
                 <div>
                   <Label htmlFor="message" className="text-foreground font-medium">رسالتك</Label>
                   <Textarea 
-                    name="message" // يجب أن يكون name موجوداً
+                    name="message"
                     id="message" 
                     rows="5" 
                     value={formData.message} 
@@ -159,7 +156,6 @@ const ContactPage = () => {
                   <Send className="ml-2 h-5 w-5" /> إرسال الرسالة
                 </Button>
               </form>
-              {/* ====================== نهاية التعديل المهم ====================== */}
             </CardContent>
           </Card>
         </motion.div>
@@ -194,7 +190,8 @@ const ContactPage = () => {
                 عرض خريطة أكبر
             </a>
         </div>
-      </section>
+      {/* ===== هذا هو السطر الذي تم تصحيحه ===== */}
+      </motion.section>
     </div>
   );
 };
