@@ -29,7 +29,7 @@ const ContactPage = () => {
     { 
       icon: <Phone className="h-8 w-8 text-primary" />, 
       title: "الهاتف (الخط الساخن)", 
-      details: ["+20 11 17767717"] 
+      details: ["01117767717"] 
     },
     { 
       icon: <Mail className="h-8 w-8 text-primary" />, 
