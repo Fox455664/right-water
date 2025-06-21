@@ -13,7 +13,10 @@ try {
   );
 }
 
-const model = genAI ? genAI.getGenerativeModel({model: "gemini-1.5-flash"}) : null;
+// السطر 16: هذا هو السطر الذي كان يسبب المشكلة. تم تعديله
+const model = genAI ?
+  genAI.getGenerativeModel({model: "gemini-1.5-flash"}) :
+  null;
 
 exports.askGemini = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
@@ -51,7 +54,6 @@ exports.askGemini = functions.https.onRequest((req, res) => {
       "- الشحن والتوصيل: داخل مصر فقط، يستغرق من 3 إلى 5 أيام عمل،",
       "تكلفة الشحن ثابتة 50 جنيه.",
       "- الدفع: الدفع عند الاستلام متاح.",
-      // --- تم تقسيم هذا السطر ---
       "- الدعم الفني: متاح عبر الهاتف 0123456789 أو عبر البريد",
       "الإلكتروني support@rightwater.com.eg",
       "- ساعات العمل: من الأحد إلى الخميس، من 9 صباحًا حتى 5 مساءً.",
