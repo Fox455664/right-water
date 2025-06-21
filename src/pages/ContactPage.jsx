@@ -22,11 +22,27 @@ const ContactPage = () => {
   };
 
   const contactInfo = [
-    { icon: <Building className="h-8 w-8 text-primary" />, title: "المقر الرئيسي", details: ["123 شارع النيل، الجيزة، مصر"] },
-    { icon: <Phone className="h-8 w-8 text-primary" />, title: "الهاتف", details: ["0123-456-7890", "02-2345-6789"] },
-    { icon: <Mail className="h-8 w-8 text-primary" />, title: "البريد الإلكتروني", details: ["info@rightwater.com.eg", "sales@rightwater.com.eg"] },
-    { icon: <Clock className="h-8 w-8 text-primary" />, title: "ساعات العمل", details: ["الأحد - الخميس: 9 صباحًا - 5 مساءً", "الجمعة والسبت: مغلق"] },
-  ];
+  { 
+    icon: <Building className="h-8 w-8 text-primary" />, 
+    title: "المقر الرئيسي", 
+    details: ["مدينة أجا - محافظة الدقهلية"] 
+  },
+  { 
+    icon: <Phone className="h-8 w-8 text-primary" />, 
+    title: "الهاتف (الخط الساخن)", 
+    details: ["0111-776-7717"] 
+  },
+  { 
+    icon: <Mail className="h-8 w-8 text-primary" />, 
+    title: "البريد الإلكتروني", 
+    details: ["rightwater156@gmail.com"] 
+  },
+  { 
+    icon: <Clock className="h-8 w-8 text-primary" />, 
+    title: "ساعات العمل", 
+    details: ["السبت - الخميس: 9 صباحًا - 5 مساءً", "الجمعة: مغلق"] 
+  },
+];
 
   return (
     <div className="container mx-auto px-4 py-12">
