@@ -121,3 +121,19 @@ body::before {
 .glassmorphism-card {
   @apply bg-card/70 backdrop-blur-md border border-white/20 shadow-xl rounded-xl;
 }
+
+/* 🔥🔥 هنا الكود المضاف 🔥🔥 */
+/* Custom scrollbar for chat window */
+.chat-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.chat-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chat-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.5);
+  border-radius: 10px;
+}
+.chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary));
+}
