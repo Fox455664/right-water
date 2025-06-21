@@ -1,6 +1,6 @@
-// src/components/admin/ProductManagement.jsx (النسخة المعدلة لاستخدام رابط الصورة)
+// src/components/admin/ProductManagement.jsx (النسخة النهائية مع حقول التقييم والمراجعات)
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '@/firebase';
 import { collection, doc, updateDoc, addDoc, deleteDoc, runTransaction, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore';
@@ -10,10 +10,10 @@ import { Input } from "@/components/ui/input.jsx";
 import { Label } from "@/components/ui/label.jsx";
 import { Textarea } from "@/components/ui/textarea.jsx";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog.jsx";
-import { PlusCircle, Edit, Trash2, Package, Loader2, AlertTriangle, Search, ArrowRight, Link as LinkIcon } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Package, Loader2, AlertTriangle, Search, ArrowRight, Link as LinkIcon, Star, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useToast } from '@/components/ui/use-toast';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog.jsx';
 
 // --- مكون فورم المنتج ---
 const ProductForm = ({ productData, setProductData, handleSubmit, isEdit, closeModal, isSubmitting }) => {
@@ -42,9 +42,27 @@ const ProductForm = ({ productData, setProductData, handleSubmit, isEdit, closeM
           <Input id="originalPrice" name="originalPrice" type="number" value={productData.originalPrice} onChange={handleInputChange} min="0" />
         </div>
       </div>
-      <div className="space-y-1">
-          <Label htmlFor="stock">الكمية المتاحة (المخزون)</Label>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1">
+          <Label htmlFor="stock">الكمية المتاحة</Label>
           <Input id="stock" name="stock" type="number" value={productData.stock} onChange={handleInputChange} required min="0" />
+        </div>
+        {/* 🔥🔥 إضافة حقل التقييم (النجوم) 🔥🔥 */}
+        <div className="space-y-1">
+            <Label htmlFor="rating">التقييم (0-5)</Label>
+            <div className="relative">
+                <Star className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input id="rating" name="rating" type="number" value={productData.rating} onChange={handleInputChange} min="0" max="5" step="0.1" className="pl-10" />
+            </div>
+        </div>
+      </div>
+      {/* 🔥🔥 إضافة حقل عدد المراجعات 🔥🔥 */}
+      <div className="space-y-1">
+          <Label htmlFor="reviews">عدد المراجعات</Label>
+          <div className="relative">
+              <MessageSquare className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input id="reviews" name="reviews" type="number" value={productData.reviews} onChange={handleInputChange} min="0" className="pl-10" />
+          </div>
       </div>
       <div className="space-y-1">
         <Label htmlFor="image">رابط الصورة</Label>
@@ -77,16 +95,16 @@ const ProductManagement = () => {
   const [error, setError] = useState(null);
   const { toast } = useToast();
   
-  // State للمودالات
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isStockModalOpen, setIsStockModalOpen] = useState(false);
   
-  // State للمنتج الحالي والجديد
   const [currentProduct, setCurrentProduct] = useState(null);
-  const [newProduct, setNewProduct] = useState({ name: '', category: '', price: '', description: '', image: '', stock: 0, originalPrice: '' });
   
-  // State لعمليات التحميل والبحث
+  // 🔥🔥 تحديث الحالة المبدئية للمنتج الجديد لتشمل الحقول الجديدة 🔥🔥
+  const initialProductState = { name: '', category: '', price: '', description: '', image: '', stock: 0, originalPrice: '', rating: 0, reviews: 0 };
+  const [newProduct, setNewProduct] = useState(initialProductState);
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stockUpdate, setStockUpdate] = useState({ amount: 0, type: 'add' });
   const [searchTerm, setSearchTerm] = useState('');
@@ -108,13 +126,15 @@ const ProductManagement = () => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // 🔥🔥 التعديل هنا: نأخذ الرابط مباشرة من الفورم 🔥🔥
+    // 🔥🔥 التأكد من تحويل قيم التقييم والمراجعات إلى أرقام 🔥🔥
     const dataToSubmit = {
       ...productData,
       price: parseFloat(productData.price) || 0,
       originalPrice: productData.originalPrice ? parseFloat(productData.originalPrice) : null,
       stock: parseInt(productData.stock, 10) || 0,
-      image: productData.image.trim(), // رابط الصورة مباشرة
+      image: productData.image.trim(),
+      rating: parseFloat(productData.rating) || 0, // تحويل التقييم إلى رقم
+      reviews: parseInt(productData.reviews, 10) || 0, // تحويل المراجعات إلى رقم
       updatedAt: serverTimestamp(),
     };
 
@@ -137,7 +157,7 @@ const ProductManagement = () => {
         await addDoc(collection(db, 'products'), dataToSubmit);
         toast({ title: "✅ تم إضافة المنتج" });
         setIsAddModalOpen(false);
-        setNewProduct({ name: '', category: '', price: '', description: '', image: '', stock: 0, originalPrice: '' });
+        setNewProduct(initialProductState);
       }
     } catch (err) {
       toast({ title: `❌ خطأ في ${isEdit ? 'التعديل' : 'الإضافة'}`, description: err.message, variant: "destructive" });
@@ -221,7 +241,7 @@ const ProductManagement = () => {
         </div>
         <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
             <DialogTrigger asChild>
-                <Button onClick={() => setNewProduct({ name: '', category: '', price: '', description: '', image: '', stock: 0, originalPrice: '' })}>
+                <Button onClick={() => setNewProduct(initialProductState)}>
                     <PlusCircle className="mr-2 h-5 w-5" /> إضافة منتج
                 </Button>
             </DialogTrigger>
@@ -232,7 +252,6 @@ const ProductManagement = () => {
         </Dialog>
       </div>
       
-      {/* ... جدول المنتجات ... */}
       <div className="bg-white dark:bg-slate-800 shadow-md rounded-lg overflow-x-auto">
         <Table>
           <TableHeader className="bg-slate-50 dark:bg-slate-700/50">
@@ -277,7 +296,6 @@ const ProductManagement = () => {
         </Table>
       </div>
 
-      {/* Edit Product Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent className="sm:max-w-lg text-right">
           <DialogHeader><DialogTitle>تعديل المنتج</DialogTitle></DialogHeader>
@@ -285,7 +303,6 @@ const ProductManagement = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Update Stock Modal */}
       <Dialog open={isStockModalOpen} onOpenChange={setIsStockModalOpen}>
         <DialogContent className="sm:max-w-sm text-right">
           <DialogHeader><DialogTitle>تحديث المخزون لـ "{currentProduct?.name}"</DialogTitle></DialogHeader>
