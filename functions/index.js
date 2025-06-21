@@ -1,92 +1,67 @@
-
-
-
+// functions/index.js
 
 const functions = require("firebase-functions");
-const admin = require("firebase-admin");
-const axios = require("axios");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// تهيئة Firebase Admin
-admin.initializeApp();
-const db = admin.firestore();
+// تهيئة النموذج باستخدام مفتاح الـ API المحفوظ بأمان
+const genAI = new GoogleGenerativeAI(functions.config().gemini.key);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-// --- معلومات EmailJS ---
-const EMAILJS_SERVICE_ID = functions.config().emailjs.service_id;
-const EMAILJS_TEMPLATE_ID = functions.config().emailjs.template_id;
-const EMAILJS_USER_ID = functions.config().emailjs.user_id;
+exports.askGemini = functions.https.onCall(async (data, context) => {
+  // التأكد من أن المستخدم مسجل دخوله (اختياري لكنه جيد للأمان)
+  // if (!context.auth) {
+  //   throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
+  // }
+  
+  const userPrompt = data.prompt;
+  if (!userPrompt) {
+    throw new functions.https.HttpsError('invalid-argument', 'The function must be called with a "prompt" argument.');
+  }
 
-// --- الدالة الأساسية لمراقبة مخزون المنتجات ---
-exports.checkProductStock = functions.region("europe-west1")
-    .firestore.document("products/{productId}")
-    .onWrite(async (change, context) => {
-      const LOW_STOCK_THRESHOLD = 5;
+  // 🔥🔥 هنا نقوم بتدريب النموذج على معلومات شركتك (System Prompt) 🔥🔥
+  // عدّل هذه المعلومات بمعلومات شركتك الحقيقية
+  const systemPrompt = `
+    أنت مساعد ذكي لمتجر اسمه "رايت ووتر" متخصص في فلاتر المياه وأنظمة التحلية في مصر.
+    مهمتك هي مساعدة العملاء والإجابة على استفساراتهم بلطف واحترافية وباللغة العربية (اللهجة المصرية).
+    
+    معلومات أساسية عن الشركة:
+    - اسم الشركة: رايت ووتر (Right Water).
+    - المنتجات: فلاتر مياه منزلية (3 مراحل، 5 مراحل، 7 مراحل)، محطات تحلية صغيرة، أنظمة معالجة صناعية.
+    - الأسعار: تبدأ من 1000 جنيه مصري وتصل إلى 50,000 جنيه للأنظمة الكبيرة.
+    - الشحن والتوصيل: داخل مصر فقط، يستغرق من 3 إلى 5 أيام عمل، تكلفة الشحن ثابتة 50 جنيه.
+    - الدفع: الدفع عند الاستلام متاح.
+    - الدعم الفني: متاح عبر الهاتف 0123456789 أو البريد الإلكتروني support@rightwater.com.eg
+    - ساعات العمل: من الأحد إلى الخميس، من 9 صباحًا حتى 5 مساءً.
+    
+    قواعد الرد:
+    1. كن ودودًا ومساعدًا دائمًا.
+    2. استخدم اللغة العربية واللهجة المصرية البسيطة.
+    3. إذا لم تعرف إجابة سؤال، قل "ليس لدي معلومات كافية عن هذا الأمر، ولكن يمكنك التواصل مع الدعم الفني لمساعدتك بشكل أفضل".
+    4. لا تبتكر معلومات غير موجودة.
+    5. حافظ على الردود قصيرة ومباشرة.
+  `;
 
-      const newData = change.after.data();
-      if (!newData) {
-        console.log("المنتج تم حذفه، لا يوجد إجراء.");
-        return null;
-      }
-
-      const productName = newData.name;
-      const currentStock = newData.stock;
-      const oldData = change.before.data();
-      const previousStock = oldData ? oldData.stock : null;
-
-      // eslint-disable-next-line max-len
-      const shouldSendNotification = currentStock <= LOW_STOCK_THRESHOLD && (previousStock === null || previousStock > LOW_STOCK_THRESHOLD);
-
-      if (shouldSendNotification) {
-        console.log(
-            `انخفاض مخزون المنتج: ${productName}. المخزون الحالي: ${currentStock}`,
-        );
-
-        // --- 1. إرسال إشعار بالإيميل باستخدام EmailJS ---
-        const emailjsApiUrl = "https://api.emailjs.com/api/v1.0/email/send";
-
-        const emailData = {
-          service_id: EMAILJS_SERVICE_ID,
-          template_id: EMAILJS_TEMPLATE_ID,
-          user_id: EMAILJS_USER_ID,
-          template_params: {
-            "product_name": productName,
-            "current_stock": currentStock,
-          },
-        };
-
-        try {
-          await axios.post(emailjsApiUrl, emailData, {
-            headers: {"Content-Type": "application/json"},
-          });
-          console.log("تم إرسال إيميل التنبيه عبر EmailJS بنجاح.");
-        } catch (error) {
-          console.error("حدث خطأ أثناء إرسال الإيميل عبر EmailJS.");
-          if (error.response) {
-            console.error("Error Body:", error.response.data);
-            console.error("Error Status:", error.response.status);
-          } else {
-            console.error("Error Message:", error.message);
-          }
-        }
-
-        // --- 2. إضافة إشعار إلى لوحة التحكم ---
-        try {
-          await db.collection("notifications").add({
-            type: "LOW_STOCK",
-            // eslint-disable-next-line max-len
-            message: `مخزون المنتج "${productName}" منخفض (${currentStock} متبقي).`,
-            productName: productName,
-            productId: context.params.productId,
-            stock: currentStock,
-            read: false,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
-          console.log("تم إنشاء إشعار في لوحة التحكم.");
-        } catch (error) {
-          console.error("حدث خطأ أثناء إنشاء إشعار:", error);
-        }
-      }
-
-      return null;
+  try {
+    const chat = model.startChat({
+      history: [
+        {
+          role: "user",
+          parts: [{ text: systemPrompt }], // يبدأ المستخدم بالتعليمات
+        },
+        {
+          role: "model",
+          parts: [{ text: "فهمت. أنا مساعد رايت ووتر الذكي، جاهز لخدمة العملاء." }], // رد النموذج للتأكيد
+        },
+      ],
     });
 
-
+    const result = await chat.sendMessage(userPrompt);
+    const response = result.response;
+    const text = response.text();
+    
+    return { text: text };
+  } catch (error) {
+    console.error("Gemini API Error:", error);
+    throw new functions.https.HttpsError('internal', 'حدث خطأ أثناء التواصل مع المساعد الذكي.');
+  }
+});
