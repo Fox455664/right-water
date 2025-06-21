@@ -1,29 +1,55 @@
-// functions/index.js
+// functions/index.js (النسخة النهائية الكاملة)
 
 const functions = require("firebase-functions");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const cors = require('cors')({ origin: "https://right-water.vercel.app" }); // <-- 1. استدعاء مكتبة cors بالسماح لموقعك فقط
 
-const genAI = new GoogleGenerativeAI(functions.config().gemini.key);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+// استيراد وتجهيز مكتبة cors للسماح بالطلبات
+// origin: true تعني أنه سيسمح تلقائياً لأي موقع يرسل الطلب، وهو الأفضل للتعامل مع preflight requests
+const cors = require('cors')({ origin: true });
 
-// 2. تغيير الدالة من onCall إلى onRequest
-exports.askGemini = functions.https.onRequest(async (req, res) => {
-  // 3. تطبيق الـ cors على الدالة
+// تهيئة النموذج - تأكد من أن مفتاح API الخاص بك تم إعداده بشكل صحيح
+// في Firebase Functions config باستخدام الأمر:
+// firebase functions:config:set gemini.key="YOUR_API_KEY"
+let genAI;
+try {
+  // هذا السطر يحاول قراءة مفتاح API من إعدادات Firebase
+  genAI = new GoogleGenerativeAI(functions.config().gemini.key);
+} catch (error) {
+  // إذا فشلت القراءة، سيتم طباعة هذا الخطأ في سجلات Firebase
+  console.error("CRITICAL: Failed to initialize GoogleGenerativeAI. Make sure 'gemini.key' is set in Firebase config.", error);
+}
+
+// تهيئة الموديل. إذا فشلت الخطوة السابقة، سيكون 'model' فارغاً (null)
+const model = genAI ? genAI.getGenerativeModel({ model: "gemini-1.5-flash" }) : null;
+
+// تصدير الدالة الرئيسية askGemini
+exports.askGemini = functions.https.onRequest((req, res) => {
+  
+  // 1. تشغيل cors أولاً. هذه الدالة ستتعامل تلقائياً مع طلبات OPTIONS
+  // وستضيف الهيدرز الصحيحة مثل 'Access-Control-Allow-Origin'
   cors(req, res, async () => {
-    // التعامل مع طلب OPTIONS الخاص بالـ preflight
-    if (req.method === 'OPTIONS') {
-      res.status(204).send('');
+    
+    // 2. التحقق إذا كان الموديل قد فشل في التهيئة
+    if (!model) {
+        console.error("Gemini model is not initialized. Cannot process request.");
+        res.status(500).send({ error: "فشل تهيئة المساعد الذكي. يرجى مراجعة إعدادات السيرفر." });
+        return;
+    }
+      
+    // 3. نحن نتوقع فقط طلبات من نوع POST
+    if (req.method !== 'POST') {
+      res.status(405).send({ error: 'Method Not Allowed. Please use POST.' });
       return;
     }
 
-    // 4. قراءة الـ prompt من الـ request body
+    // 4. قراءة السؤال من جسم الطلب
     const userPrompt = req.body.prompt;
     if (!userPrompt) {
-      res.status(400).send({ error: 'The function must be called with a "prompt" argument.' });
+      res.status(400).send({ error: 'The function must be called with a "prompt" argument in the request body.' });
       return;
     }
 
+    // 5. التعليمات الأساسية للمساعد الذكي (System Prompt)
     const systemPrompt = `
       أنت مساعد ذكي لمتجر اسمه "رايت ووتر" متخصص في فلاتر المياه وأنظمة التحلية في مصر.
       مهمتك هي مساعدة العملاء والإجابة على استفساراتهم بلطف واحترافية وباللغة العربية (اللهجة المصرية).
@@ -46,29 +72,25 @@ exports.askGemini = functions.https.onRequest(async (req, res) => {
     `;
 
     try {
+      // 6. بدء محادثة جديدة مع تاريخ التعليمات
       const chat = model.startChat({
         history: [
-          {
-            role: "user",
-            parts: [{ text: systemPrompt }],
-          },
-          {
-            role: "model",
-            parts: [{ text: "فهمت. أنا مساعد رايت ووتر الذكي، جاهز لخدمة العملاء." }],
-          },
+          { role: "user", parts: [{ text: systemPrompt }] },
+          { role: "model", parts: [{ text: "فهمت. أنا مساعد رايت ووتر الذكي، جاهز لخدمة العملاء." }] },
         ],
       });
 
+      // 7. إرسال سؤال المستخدم إلى Gemini
       const result = await chat.sendMessage(userPrompt);
       const response = result.response;
       const text = response.text();
       
-      // 5. إرسال الرد باستخدام res.send بدلاً من return
+      // 8. إرسال الرد بنجاح إلى العميل
       res.status(200).send({ text: text });
 
     } catch (error) {
+      // 9. في حالة حدوث أي خطأ من Gemini، يتم تسجيله وإرسال رسالة خطأ عامة
       console.error("Gemini API Error:", error);
-      // 6. إرسال الخطأ باستخدام res.status
       res.status(500).send({ error: 'حدث خطأ أثناء التواصل مع المساعد الذكي.' });
     }
   });
