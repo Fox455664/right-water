@@ -1,4 +1,4 @@
-// src/pages/HomePage.jsx
+// src/pages/HomePage.jsx (النسخة النهائية مع خلفية الفيديو)
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Droplets, ShieldCheck, Zap, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+
+// 🔥🔥 الخطوة 1: استيراد الفيديو من مجلد الـ assets 🔥🔥
+import heroVideo from '@/assets/videos/hero-video.mp4';
+
 
 const FeatureCard = ({ icon, title, description, delay }) => (
   <motion.div
@@ -30,18 +34,33 @@ const FeatureCard = ({ icon, title, description, delay }) => (
 const HomePage = () => {
   return (
     <div className="space-y-16">
+
+      {/* 🔥🔥 الخطوة 2: تعديل قسم الـ Hero ليحتوي على الفيديو 🔥🔥 */}
       <motion.section 
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.7, ease: "easeOut" }}
-        className="text-center py-16 md:py-24 bg-gradient-to-br from-water-blue/20 via-water-green/10 to-transparent rounded-xl shadow-lg"
+        className="relative text-center py-20 md:py-32 rounded-xl shadow-lg overflow-hidden"
       >
-        <div className="container mx-auto px-4">
+        {/* عنصر الفيديو الذي سيعمل في الخلفية */}
+        <video 
+          autoPlay 
+          loop 
+          muted 
+          playsInline
+          className="absolute top-0 left-0 w-full h-full object-cover z-0"
+        >
+          <source src={heroVideo} type="video/mp4" />
+          متصفحك لا يدعم عرض الفيديوهات.
+        </video>
+        
+        {/* طبقة لونية فوق الفيديو لتوضيح النص */}
+        <div className="absolute top-0 left-0 w-full h-full bg-black/50 z-10"></div>
+
+        {/* المحتوى النصي الذي سيظهر فوق الفيديو */}
+        <div className="relative z-20 container mx-auto px-4">
           <motion.div 
             initial={{ opacity: 0, y: -30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="inline-block p-4 bg-gradient-to-r from-primary to-secondary rounded-full mb-6 shadow-md"
+            className="inline-block p-4 bg-white/20 rounded-full mb-6 shadow-md backdrop-blur-sm"
           >
             <Droplets size={64} className="text-white" />
           </motion.div>
@@ -49,7 +68,7 @@ const HomePage = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
-            className="text-5xl md:text-6xl font-extrabold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary"
+            className="text-5xl md:text-6xl font-extrabold mb-6 text-white drop-shadow-lg"
           >
             مياه نقية لحياة صحية مع رايت ووتر
           </motion.h1>
@@ -57,7 +76,7 @@ const HomePage = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.6 }}
-            className="text-xl md:text-2xl text-foreground/80 mb-10 max-w-3xl mx-auto"
+            className="text-xl md:text-2xl text-slate-200 mb-10 max-w-3xl mx-auto drop-shadow-md"
           >
             نقدم حلولاً مبتكرة لمعالجة المياه وأنظمة شرب صحية تضمن لك ولعائلتك مياهاً آمنة ونقية كل يوم.
           </motion.p>
@@ -74,6 +93,7 @@ const HomePage = () => {
           </motion.div>
         </div>
       </motion.section>
+      {/* 🔥🔥 نهاية تعديل قسم الـ Hero 🔥🔥 */}
 
       <section className="container mx-auto px-4">
         <h2 className="text-4xl font-bold text-center mb-12 text-primary">لماذا تختار رايت ووتر؟</h2>
@@ -126,7 +146,6 @@ const HomePage = () => {
         <div className="grid md:grid-cols-3 gap-8">
           <motion.div whileHover={{ y: -10 }} className="cursor-pointer">
             <Card className="overflow-hidden glassmorphism-card">
-              {/* 🔥🔥 استبدل هذا الرابط بالرابط الذي نسخته من Firebase Storage 🔥🔥 */}
               <img alt="فلتر مياه منزلي" className="w-full h-56 object-cover" src="https://firebasestorage.googleapis.com/v0/b/YOUR-PROJECT-ID.appspot.com/o/YOUR-IMAGE-NAME.jpg?alt=media&token=YOUR-TOKEN" />
               <CardHeader>
                 <CardTitle className="text-primary">رايت ووتر بوكس</CardTitle>
