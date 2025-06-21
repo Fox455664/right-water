@@ -3,60 +3,22 @@ import { motion } from 'framer-motion';
 import { Phone, Mail, MapPin, Send, Building, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea'; // Assuming you have a Textarea component
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-// Create Textarea if it doesn't exist
-// You might need to create this file: src/components/ui/textarea.jsx
-// Example content for textarea.jsx:
-// import React from "react"
-// import { cn } from "@/lib/utils"
-// const Textarea = React.forwardRef(({ className, ...props }, ref) => {
-//   return (
-//     <textarea
-//       className={cn(
-//         "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-//         className
-//       )}
-//       ref={ref}
-//       {...props}
-//     />
-//   )
-// })
-// Textarea.displayName = "Textarea"
-// export { Textarea }
-
-
 const ContactPage = () => {
-  const { toast } = useToast();
+  // لم نعد بحاجة لـ useToast أو حالة الإرسال اليدوية لأن Formspree سيتولى الأمر
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     subject: '',
     message: '',
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    console.log("Form submitted:", formData);
-    toast({
-      title: "📬 تم إرسال رسالتك بنجاح!",
-      description: "شكراً لتواصلك معنا. سنقوم بالرد عليك في أقرب وقت ممكن.",
-      className: "bg-green-500 text-white",
-    });
-    setFormData({ name: '', email: '', subject: '', message: '' });
-    setIsSubmitting(false);
   };
 
   const contactInfo = [
@@ -115,12 +77,18 @@ const ContactPage = () => {
               <CardTitle className="text-3xl font-bold text-primary text-center">أرسل لنا رسالة</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <form onSubmit={handleSubmit} className="space-y-6">
+              {/* ===================== بداية التعديل المهم ===================== */}
+              {/* استخدمنا وسم <form> العادي بدلاً من form مع دالة handleSubmit */}
+              <form 
+                action="https://formspree.io/f/xvgpydyg" 
+                method="POST" 
+                className="space-y-6"
+              >
                 <div>
                   <Label htmlFor="name" className="text-foreground font-medium">الاسم الكامل</Label>
                   <Input 
                     type="text" 
-                    name="name" 
+                    name="name" // يجب أن يكون name موجوداً لكي يرسله Formspree
                     id="name" 
                     value={formData.name} 
                     onChange={handleChange} 
@@ -133,7 +101,7 @@ const ContactPage = () => {
                   <Label htmlFor="email" className="text-foreground font-medium">البريد الإلكتروني</Label>
                   <Input 
                     type="email" 
-                    name="email" 
+                    name="email" // يجب أن يكون name موجوداً
                     id="email" 
                     value={formData.email} 
                     onChange={handleChange} 
@@ -146,7 +114,7 @@ const ContactPage = () => {
                   <Label htmlFor="subject" className="text-foreground font-medium">الموضوع</Label>
                   <Input 
                     type="text" 
-                    name="subject" 
+                    name="subject" // يجب أن يكون name موجوداً
                     id="subject" 
                     value={formData.subject} 
                     onChange={handleChange} 
@@ -158,7 +126,7 @@ const ContactPage = () => {
                 <div>
                   <Label htmlFor="message" className="text-foreground font-medium">رسالتك</Label>
                   <Textarea 
-                    name="message" 
+                    name="message" // يجب أن يكون name موجوداً
                     id="message" 
                     rows="5" 
                     value={formData.message} 
@@ -170,25 +138,12 @@ const ContactPage = () => {
                 </div>
                 <Button 
                   type="submit" 
-                  disabled={isSubmitting}
                   className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity text-lg py-3"
                 >
-                  {isSubmitting ? (
-                    <>
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        className="ml-2 h-5 w-5 border-2 border-transparent border-t-white rounded-full"
-                      />
-                      جاري الإرسال...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="ml-2 h-5 w-5" /> إرسال الرسالة
-                    </>
-                  )}
+                  <Send className="ml-2 h-5 w-5" /> إرسال الرسالة
                 </Button>
               </form>
+              {/* ====================== نهاية التعديل المهم ====================== */}
             </CardContent>
           </Card>
         </motion.div>
@@ -202,9 +157,8 @@ const ContactPage = () => {
       >
         <h2 className="text-3xl font-bold text-primary text-center mb-8">موقعنا على الخريطة</h2>
         <div className="aspect-w-16 aspect-h-9 rounded-xl overflow-hidden shadow-2xl border-4 border-primary/30">
-          {/* Replace with OpenStreetMap iframe or a map component */}
           <iframe
-            src="https://www.openstreetmap.org/export/embed.html?bbox=31.198167800903324%2C30.03986893231807%2C31.20899200439453%2C30.04569608970079&amp;layer=mapnik&amp;marker=30.04278251960827%2C31.203579902648926"
+            src="https://www.openstreetmap.org/export/embed.html?bbox=31.198167800903324%2C30.03986893231807%2C31.20899200439453%2C30.04569608970079&layer=mapnik&marker=30.04278251960827%2C31.203579902648926"
             width="100%"
             height="450"
             style={{ border:0 }}
@@ -224,7 +178,7 @@ const ContactPage = () => {
                 عرض خريطة أكبر
             </a>
         </div>
-      </motion.section>
+      </section>
     </div>
   );
 };
