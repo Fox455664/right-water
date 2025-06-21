@@ -1,10 +1,17 @@
-// src/components/AIAssistant.jsx
+// src/components/AIAssistant.jsx (النسخة المصححة مع استيراد Button)
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, X, Loader2 } from 'lucide-react';
 import AIFloatingButton from './AIFloatingButton';
 import ChatBubble from './ChatBubble';
+import { Button } from '@/components/ui/button'; // 🔥🔥 هذا هو السطر الذي تم إضافته لحل المشكلة 🔥🔥
+
+import { getFunctions, httpsCallable } from "firebase/functions";
+
+const functions = getFunctions();
+const askGemini = httpsCallable(functions, 'askGemini');
+
 
 const AIAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,7 +22,6 @@ const AIAssistant = () => {
   const [isLoading, setIsLoading] = useState(false);
   const chatEndRef = useRef(null);
 
-  // للتمرير لأسفل عند إضافة رسالة جديدة
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -29,20 +35,18 @@ const AIAssistant = () => {
     setInputValue('');
     setIsLoading(true);
 
-    // --- (مؤقت) ردود ثابتة ---
-    // في الخطوة القادمة، سنستبدل هذا بمنطق الذكاء الاصطناعي الحقيقي
-    setTimeout(() => {
-      let aiResponse = "عذراً، لم أفهم سؤالك. هل يمكنك توضيحه؟";
-      if (userMessage.includes("سعر")) {
-        aiResponse = "لمعرفة أسعار المنتجات، يرجى زيارة صفحة المنتجات الخاصة بنا. هل هناك منتج معين تسأل عنه؟";
-      } else if (userMessage.includes("شحن") || userMessage.includes("توصيل")) {
-        aiResponse = "مدة التوصيل تستغرق من 3 إلى 5 أيام عمل داخل مصر. تكلفة الشحن ثابتة وهي 50 جنيهًا مصريًا.";
-      } else if (userMessage.includes("شكرا")) {
-        aiResponse = "العفو! في خدمتك دائمًا.";
-      }
+    try {
+      const result = await askGemini({ prompt: userMessage });
+      const aiResponse = result.data.text;
+      
       setMessages(prev => [...prev, { sender: 'ai', text: aiResponse }]);
+
+    } catch (error) {
+      console.error("Error calling Firebase Function:", error);
+      setMessages(prev => [...prev, { sender: 'ai', text: "عفوًا، حدث خطأ فني. يرجى المحاولة مرة أخرى لاحقًا." }]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
