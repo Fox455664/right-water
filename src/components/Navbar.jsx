@@ -1,9 +1,8 @@
 // src/components/Navbar.jsx
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, User, LogIn, LogOut, ShieldCheck, Droplets } from 'lucide-react';
+import { ShoppingCart, User, LogIn, LogOut, ShieldCheck, Droplets, BookOpen } from 'lucide-react'; // 🔥 إضافة أيقونة BookOpen
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { motion } from 'framer-motion';
@@ -54,12 +53,18 @@ const Navbar = () => {
       <div className="container mx-auto flex items-center justify-between">
         <Link to="/" className="flex items-center space-x-2 text-white hover:opacity-90 transition-opacity" aria-label="الصفحة الرئيسية">
           <Droplets size={36} className="text-white" />
-          {/* 🔥🔥 هنا تم التصحيح 🔥🔥 */}
-          <h1 className="text-2xl font-bold tracking-tight">رايت ووتر</h1>
+          <h1 className="text-2xl font-bold tracking-tight">رايت واتر</h1>
         </Link>
         <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4">
           <Link to="/products">
             <Button aria-label="المنتجات" variant="ghost" className="text-white hover:bg-white/20 px-2 sm:px-3">المنتجات</Button>
+          </Link>
+          {/* 🔥🔥 الزر الجديد هنا 🔥🔥 */}
+          <Link to="/articles">
+            <Button aria-label="مقالات" variant="ghost" className="text-white hover:bg-white/20 px-2 sm:px-3">
+              <BookOpen className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">مقالات</span>
+            </Button>
           </Link>
           <Link to="/cart">
             <Button aria-label="السلة" variant="ghost" className="text-white hover:bg-white/20 relative px-2 sm:px-3">
