@@ -19,7 +19,7 @@ import ProfileLayout from '@/components/ProfileLayout.jsx';
 
 // --- استيراد كل الصفحات ---
 import HomePage from '@/pages/HomePage.jsx';
-import ProductsPage from '@/pages/ProductsPage.jsx';
+// import ProductsPage from '@/pages/ProductsPage.jsx'; // لم نعد بحاجة لهذه الصفحة
 import ProductDetailsPage from '@/pages/ProductDetailsPage.jsx';
 import AboutPage from '@/pages/AboutPage.jsx';
 import ContactPage from '@/pages/ContactPage.jsx';
@@ -34,7 +34,10 @@ import OrderSuccessPage from '@/pages/OrderSuccessPage.jsx';
 import OrderDetailsPage from '@/pages/OrderDetailsPage.jsx';
 import TermsConditionsPage from '@/pages/TermsConditionsPage.jsx';
 import UserOrdersPage from '@/pages/UserOrdersPage.jsx'; 
-import ArticlesPage from '@/pages/ArticlesPage.jsx'; // 🔥🔥 استيراد الصفحة الجديدة 🔥🔥
+import ArticlesPage from '@/pages/ArticlesPage.jsx';
+
+// 🔥🔥 استيراد الصفحة الجديدة لعرض فئات المنتجات 🔥🔥
+import CategoryPage from '@/pages/CategoryPage.jsx';
 
 // --- صفحات لوحة التحكم ---
 import AdminDashboardPage from '@/pages/AdminDashboardPage.jsx';
@@ -67,12 +70,15 @@ function App() {
             <Route path="/" element={<Layout />}>
               {/* --- الصفحات العامة --- */}
               <Route index element={<AnimatedPage><HomePage /></AnimatedPage>} />
-              <Route path="products" element={<AnimatedPage><ProductsPage /></AnimatedPage>} />
+              
+              {/* 🔥🔥 المسار الجديد والديناميكي للمنتجات 🔥🔥 */}
+              <Route path="products/:categoryId" element={<AnimatedPage><CategoryPage /></AnimatedPage>} />
+              
               <Route path="product/:productId" element={<AnimatedPage><ProductDetailsPage /></AnimatedPage>} />
               <Route path="cart" element={<AnimatedPage><CartPage /></AnimatedPage>} />
               <Route path="about" element={<AnimatedPage><AboutPage /></AnimatedPage>} />
               <Route path="contact" element={<AnimatedPage><ContactPage /></AnimatedPage>} />
-              <Route path="articles" element={<AnimatedPage><ArticlesPage /></AnimatedPage>} /> {/* 🔥🔥 إضافة المسار الجديد 🔥🔥 */}
+              <Route path="articles" element={<AnimatedPage><ArticlesPage /></AnimatedPage>} />
               <Route path="login" element={<AnimatedPage><LoginPage /></AnimatedPage>} />
               <Route path="signup" element={<AnimatedPage><SignupPage /></AnimatedPage>} />
               <Route path="forgot-password" element={<AnimatedPage><ForgotPasswordPage /></AnimatedPage>} />
