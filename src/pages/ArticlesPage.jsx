@@ -151,7 +151,41 @@ const productCategories = [
     },
 ];
 
-// المصفوفة النهائية للمقالات
+const AllProductsAccordion = () => (
+    <div className="w-full">
+        <p className="mb-6 text-base">
+            في رايت ووتر، نفخر بتقديم كتالوج شامل من <strong>شمعات الفلاتر</strong>، قطع الغيار، والأنظمة الكاملة التي تضمن لك الحصول على مياه نقية وصحية. تصفح فئات منتجاتنا أدناه للعثور على ما تحتاجه بالضبط.
+        </p>
+        <Accordion type="single" collapsible className="w-full">
+            {productCategories.map((category, index) => (
+                <AccordionItem value={`item-${index}`} key={index}>
+                    <AccordionTrigger className="text-xl hover:no-underline text-right">
+                        <div className="flex justify-between w-full items-center">
+                            <span>{category.category}</span>
+                            <span className="text-sm text-muted-foreground mr-auto pl-4">{category.products.length} منتجات</span>
+                        </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                        <div className="grid grid-cols-1 gap-4 pt-4">
+                            {category.products.map((product, pIndex) => (
+                                <ProductItem
+                                    key={pIndex}
+                                    name={product.name}
+                                    description={product.description}
+                                    image={product.image}
+                                    altText={product.altText}
+                                />
+                            ))}
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
+            ))}
+        </Accordion>
+    </div>
+);
+
+
+// 🔥🔥🔥 تم إصلاح الخطأ: تعريف واحد فقط لمصفوفة المقالات هنا 🔥🔥🔥
 const articles = [
   {
     icon: <HeartPulse className="h-10 w-10 text-primary" />,
