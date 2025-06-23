@@ -1,11 +1,47 @@
 // src/components/Navbar.jsx
+
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, User, LogIn, LogOut, ShieldCheck, Droplets, BookOpen } from 'lucide-react'; // 🔥 إضافة أيقونة BookOpen
+import { ShoppingCart, User, LogIn, LogOut, ShieldCheck, Droplets, BookOpen, Package } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { motion } from 'framer-motion';
+
+// 🔥🔥 استيراد مكونات القائمة المنسدلة وبيانات المنتجات 🔥🔥
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
+} from "@/components/ui/navigation-menu";
+import { productCategories } from "@/data/productsData";
+
+// 🔥🔥 مكون مساعد لعرض عناصر القائمة المنسدلة 🔥🔥
+const ListItem = React.forwardRef(({ className, title, children, to, ...props }, ref) => {
+  return (
+    <li>
+      <NavigationMenuLink asChild>
+        <Link
+          to={to}
+          ref={ref}
+          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+          {...props}
+        >
+          <div className="text-sm font-medium leading-none">{title}</div>
+          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+            {children}
+          </p>
+        </Link>
+      </NavigationMenuLink>
+    </li>
+  );
+});
+ListItem.displayName = "ListItem";
+
 
 const Navbar = () => {
   const { currentUser, isAdmin, signOut } = useAuth();
@@ -55,17 +91,43 @@ const Navbar = () => {
           <Droplets size={36} className="text-white" />
           <h1 className="text-2xl font-bold tracking-tight">رايت واتر</h1>
         </Link>
+
+        {/* 🔥🔥 تم تعديل هذا الجزء بالكامل 🔥🔥 */}
         <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4">
-          <Link to="/products">
-            <Button aria-label="المنتجات" variant="ghost" className="text-white hover:bg-white/20 px-2 sm:px-3">المنتجات</Button>
-          </Link>
-          {/* 🔥🔥 الزر الجديد هنا 🔥🔥 */}
-          <Link to="/articles">
-            <Button aria-label="مقالات" variant="ghost" className="text-white hover:bg-white/20 px-2 sm:px-3">
-              <BookOpen className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">مقالات</span>
-            </Button>
-          </Link>
+          <NavigationMenu>
+            <NavigationMenuList>
+              {/* --- القائمة المنسدلة للمنتجات --- */}
+              <NavigationMenuItem>
+                <NavigationMenuTrigger className="text-white bg-transparent hover:bg-white/20 focus:bg-white/20 data-[state=open]:bg-white/20">
+                    <Package className="h-4 w-4 md:mr-2"/>
+                    <span className="hidden md:inline">المنتجات</span>
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
+                    {productCategories.map((category) => (
+                      <ListItem
+                        key={category.id}
+                        title={category.title}
+                        to={`/products/${category.id}`} // رابط ديناميكي لكل فئة
+                      >
+                        تصفح جميع منتجات فئة {category.title}.
+                      </ListItem>
+                    ))}
+                  </ul>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+
+              {/* --- زر المقالات --- */}
+              <NavigationMenuItem>
+                  <NavLink to="/articles" className={`${navigationMenuTriggerStyle()} text-white bg-transparent hover:bg-white/20 focus:bg-white/20`}>
+                      <BookOpen className="h-4 w-4 md:mr-2" />
+                      <span className="hidden md:inline">مقالات</span>
+                  </NavLink>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
+
+          {/* --- أيقونات السلة والمستخدم --- */}
           <Link to="/cart">
             <Button aria-label="السلة" variant="ghost" className="text-white hover:bg-white/20 relative px-2 sm:px-3">
               <ShoppingCart size={20} />
