@@ -4,7 +4,7 @@ import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Home } from 'lucide-react';
-import { productCategories } from '@/data/productsData'; // استيراد البيانات من الملف الذي أنشأناه
+import { productCategories } from '@/data/productsData.jsx'; // استيراد البيانات من الملف الذي أنشأناه
 import { Button } from '@/components/ui/button';
 
 // مكون عرض المنتج الواحد بتصميم جذاب
