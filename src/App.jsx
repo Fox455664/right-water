@@ -1,4 +1,4 @@
-// src/App.jsx (النسخة النهائية والمعدلة لكل المسارات)
+// src/App.jsx
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
@@ -34,6 +34,7 @@ import OrderSuccessPage from '@/pages/OrderSuccessPage.jsx';
 import OrderDetailsPage from '@/pages/OrderDetailsPage.jsx';
 import TermsConditionsPage from '@/pages/TermsConditionsPage.jsx';
 import UserOrdersPage from '@/pages/UserOrdersPage.jsx'; 
+import ArticlesPage from '@/pages/ArticlesPage.jsx'; // 🔥🔥 استيراد الصفحة الجديدة 🔥🔥
 
 // --- صفحات لوحة التحكم ---
 import AdminDashboardPage from '@/pages/AdminDashboardPage.jsx';
@@ -71,6 +72,7 @@ function App() {
               <Route path="cart" element={<AnimatedPage><CartPage /></AnimatedPage>} />
               <Route path="about" element={<AnimatedPage><AboutPage /></AnimatedPage>} />
               <Route path="contact" element={<AnimatedPage><ContactPage /></AnimatedPage>} />
+              <Route path="articles" element={<AnimatedPage><ArticlesPage /></AnimatedPage>} /> {/* 🔥🔥 إضافة المسار الجديد 🔥🔥 */}
               <Route path="login" element={<AnimatedPage><LoginPage /></AnimatedPage>} />
               <Route path="signup" element={<AnimatedPage><SignupPage /></AnimatedPage>} />
               <Route path="forgot-password" element={<AnimatedPage><ForgotPasswordPage /></AnimatedPage>} />
@@ -80,7 +82,6 @@ function App() {
               {/* --- المسارات المحمية للمستخدم المسجل --- */}
               <Route element={<ProtectedRoute />}>
                 <Route path="checkout" element={<AnimatedPage><CheckoutPage /></AnimatedPage>} />
-                {/* دمجنا ProfileLayout هنا */}
                 <Route path="profile" element={<ProfileLayout />}>
                   <Route index element={<UserProfilePage />} />
                   <Route path="orders" element={<UserOrdersPage />} />
