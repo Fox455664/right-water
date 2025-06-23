@@ -185,7 +185,6 @@ const AllProductsAccordion = () => (
 );
 
 
-// 🔥🔥🔥 تم إصلاح الخطأ: تعريف واحد فقط لمصفوفة المقالات هنا 🔥🔥🔥
 const articles = [
   {
     icon: <HeartPulse className="h-10 w-10 text-primary" />,
@@ -321,6 +320,7 @@ const ArticlesPage = () => {
         </p>
       </motion.section>
 
+      {/* 🔥🔥🔥 هذا هو السطر الذي تم إصلاحه نهائيًا ليعرض عمودين 🔥🔥🔥 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
         {articles.map((article, index) => (
           <div key={index} className={index === articles.length - 1 ? 'lg:col-span-2' : ''}>
