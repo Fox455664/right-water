@@ -7,7 +7,7 @@ import { Droplets, ShieldOff, HeartPulse, Sparkles, ShoppingCart, Layers3 } from
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-// بيانات المقالات مع إضافة الصور
+// 🔥🔥 تم تحديث رابط الصورة المعطوبة هنا 🔥🔥
 const articles = [
   {
     icon: <HeartPulse className="h-10 w-10 text-primary" />,
@@ -34,7 +34,8 @@ const articles = [
   {
     icon: <Layers3 className="h-10 w-10 text-secondary" />,
     title: "فك شفرة فلاتر المياه: من 3 مراحل إلى 7 مراحل (RO)",
-    image: "https://images.unsplash.com/photo-1614195975309-a3baf592274f?w=500&auto=format&fit=crop&q=60",
+    // 🔥🔥 هذا هو الرابط الجديد والمؤكد 🔥🔥
+    image: "https://images.unsplash.com/photo-1623990088169-3eafccdec2c0?w=500&auto=format&fit=crop&q=60",
     content: (
       <div className="space-y-4 text-right">
         <p className="mb-4">عالم فلاتر المياه قد يبدو معقدًا، لكننا هنا لتبسيطه لك. كل مرحلة في الفلتر لها دور حاسم في رحلة تحويل مياه الصنبور العادية إلى مياه شرب صحية ونقية:</p>
@@ -96,13 +97,14 @@ const ArticleCard = ({ article, index }) => (
         viewport={{ once: true, amount: 0.2 }}
         transition={{ duration: 0.5, delay: index * 0.1 }}
     >
-        {/* 🔥🔥 هنا تم تعديل تصميم البطاقة لتشمل الصورة 🔥🔥 */}
         <Card className="flex flex-col h-full glassmorphism-card hover:shadow-2xl transition-shadow duration-300 w-full overflow-hidden">
-            <div className="aspect-video overflow-hidden">
+            {/* 🔥🔥 إضافة خلفية مؤقتة هنا 🔥🔥 */}
+            <div className="aspect-video overflow-hidden bg-muted">
                 <img 
                     src={article.image} 
                     alt={article.title} 
                     className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
+                    loading="lazy" // تحسين الأداء
                 />
             </div>
             <CardHeader className="p-6">
@@ -137,7 +139,6 @@ const ArticlesPage = () => {
         </p>
       </motion.section>
 
-      {/* 🔥🔥 تم تعديل الشبكة هنا لتكون أكثر تناسقًا 🔥🔥 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
         {articles.map((article, index) => (
           <ArticleCard key={index} article={article} index={index} />
