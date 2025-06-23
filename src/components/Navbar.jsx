@@ -18,7 +18,7 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
-import { productCategories } from "@/data/productsData";
+import { productCategories } from "@/data/productsData.jsx";
 
 // 🔥🔥 مكون مساعد لعرض عناصر القائمة المنسدلة 🔥🔥
 const ListItem = React.forwardRef(({ className, title, children, to, ...props }, ref) => {
