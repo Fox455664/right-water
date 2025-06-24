@@ -2,7 +2,7 @@
 
 import { collection, writeBatch, doc } from 'firebase/firestore';
 import { db } from './src/firebase.js'; // ✅ يستورد db من ملفك مباشرة
-import { productCategories } from './src/data/productsData.jsx'; // تأكد من صحة مسار ملف بياناتك
+import { productCategories } from './src/data/productsData.js'; // تأكد من صحة مسار ملف بياناتك
 
 // الدالة الرئيسية لرفع البيانات
 async function uploadData() {
