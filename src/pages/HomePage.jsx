@@ -1,6 +1,6 @@
-// src/pages/HomePage.jsx (النسخة النهائية مع جلب المنتجات المميزة)
+// src/pages/HomePage.jsx (النسخة المعدلة بالحل رقم 1)
 
-import React, { useState, useEffect } from 'react'; // استيراد Hooks
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Droplets, ShieldCheck, Zap, Users, Loader2 } from 'lucide-react';
@@ -8,8 +8,6 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import ProductCard from '@/components/ProductCard';
 
-// 🔥🔥 الخطوة 1: تصحيح جملة الاستيراد (Import) 🔥🔥
-// نستورد db من ملفنا المحلي، وباقي الدوال من مكتبة firestore
 import { db } from '@/firebase';
 import { collection, query, getDocs, limit, orderBy } from 'firebase/firestore'; 
 
@@ -38,8 +36,6 @@ const FeatureCard = ({ icon, title, description, delay }) => (
 );
 
 const HomePage = () => {
-  
-  // 🔥🔥 الخطوة 2: إضافة State و useEffect لجلب المنتجات المميزة 🔥🔥
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -47,7 +43,6 @@ const HomePage = () => {
     const fetchFeaturedProducts = async () => {
       try {
         const productsRef = collection(db, 'products');
-        // جلب 3 منتجات فقط، مرتبة حسب تاريخ الإضافة (الأحدث أولاً)
         const q = query(productsRef, orderBy('createdAt', 'desc'), limit(3));
         const querySnapshot = await getDocs(q);
         const productsList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -60,14 +55,15 @@ const HomePage = () => {
     };
     fetchFeaturedProducts();
   }, []);
-  // 🔥🔥 نهاية الكود الجديد لجلب المنتجات 🔥🔥
 
   return (
     <div className="space-y-16">
 
-      {/* قسم الفيديو في الخلفية */}
+      {/* ✅✅✅ بداية التعديل هنا ✅✅✅ */}
       <motion.section 
-        className="relative text-center py-20 md:py-32 rounded-xl shadow-lg overflow-hidden"
+        // 1. جعلنا القسم يأخذ 70% من ارتفاع الشاشة (h-[70vh])
+        // 2. استخدمنا flex لوضع المحتوى في المنتصف رأسياً وأفقياً
+        className="relative flex items-center justify-center text-center h-[70vh] rounded-xl shadow-lg overflow-hidden"
       >
         <video 
           autoPlay 
@@ -118,11 +114,12 @@ const HomePage = () => {
           </motion.div>
         </div>
       </motion.section>
+      {/* 🔴🔴🔴 نهاية التعديل هنا 🔴🔴🔴 */}
 
       {/* قسم "لماذا تختارنا؟" */}
       <section className="container mx-auto px-4">
         <h2 className="text-4xl font-bold text-center mb-12 text-primary">لماذا تختار رايت ووتر؟</h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <FeatureCard 
             icon={<Droplets size={40} />} 
             title="جودة لا تضاهى" 
@@ -167,13 +164,13 @@ const HomePage = () => {
         </div>
       </section>
       
-      {/* 🔥🔥 الخطوة 3: تعديل قسم المنتجات المميزة ليكون ديناميكيًا 🔥🔥 */}
+      {/* قسم المنتجات المميزة */}
       <section className="container mx-auto px-4 text-center">
         <h2 className="text-4xl font-bold text-center mb-8 text-primary">منتجاتنا المميزة</h2>
         {loading ? (
             <div className="flex justify-center p-8"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
         ) : (
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {featuredProducts.map(product => (
                     <ProductCard key={product.id} product={product} />
                 ))}
