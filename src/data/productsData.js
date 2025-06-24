@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { productCategories } from '@/data/productsDatajsx'; // استيراد البيانات من ملفك
+import { productCategories } from '@/data/productsDatajs'; // استيراد البيانات من ملفك
 
 // Component لكارت المنتج
 const ProductCard = ({ product }) => (
