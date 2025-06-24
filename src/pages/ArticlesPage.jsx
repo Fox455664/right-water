@@ -1,4 +1,4 @@
-// src/pages/ArticlesPage.jsx
+// src/pages/ArticlesPage.jsx (النسخة النهائية بالحل)
 
 import React from 'react';
 import { motion } from 'framer-motion';
@@ -7,6 +7,7 @@ import { Droplets, ShieldOff, HeartPulse, Sparkles, ShoppingCart, Layers3 } from
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+// ✅ أضفت المقالة السادسة هنا عشان تكون مطابقة لطلبك
 const articles = [
   {
     icon: <HeartPulse className="h-10 w-10 text-primary" />,
@@ -85,8 +86,20 @@ const articles = [
         <p className="font-semibold text-green-600">لا تؤجل قرارًا يمكن أن يغير جودة حياتك. صحتك تستحق الأفضل، وصحتك تبدأ الآن!</p>
       </>
     ),
+  },
+  {
+    icon: <Droplets className="h-10 w-10 text-blue-400" />,
+    title: "دليل صيانة الفلتر: حافظ على نقاء مياهك",
+    image: "https://images.unsplash.com/photo-1583592323232-9a36d2c4b8b8?w=500&auto=format&fit=crop&q=60",
+    content: (
+      <>
+        <p className="mb-4">تركيب الفلتر هو الخطوة الأولى، لكن الصيانة الدورية هي مفتاح ضمان استمرارية نقاء المياه. تغيير الشمعات بانتظام ليس رفاهية بل ضرورة للحفاظ على كفاءة الفلتر ومنع تراكم الملوثات. اتبع جدول الصيانة الموصى به لتضمن أن كل كوب ماء تشربه هو الأفضل دائمًا.</p>
+        <p className="font-semibold text-blue-500">نصيحة الخبراء: سجل مواعيد تغيير الشمعات في تقويمك لتجنب النسيان.</p>
+      </>
+    ),
   }
 ];
+
 
 const ArticleCard = ({ article, index }) => (
     <motion.div
@@ -94,6 +107,8 @@ const ArticleCard = ({ article, index }) => (
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.2 }}
         transition={{ duration: 0.5, delay: index * 0.1 }}
+        // ✅ هذا الكلاس يجعل المقال الأخير يمتد ليملأ السطر كاملاً إذا كان وحيداً
+        className="lg:[&:last-child:nth-child(odd)]:col-span-2"
     >
         <Card className="flex flex-col h-full glassmorphism-card hover:shadow-2xl transition-shadow duration-300 w-full overflow-hidden">
             <div className="aspect-video overflow-hidden bg-muted">
@@ -136,16 +151,19 @@ const ArticlesPage = () => {
         </p>
       </motion.section>
 
+      {/* 🔴🔴🔴 بداية التعديل هنا 🔴🔴🔴 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
         {articles.map((article, index) => (
           <ArticleCard key={index} article={article} index={index} />
         ))}
       </div>
+      {/* 🔴🔴🔴 نهاية التعديل هنا 🔴🔴🔴 */}
 
        <motion.section
         initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, delay: 0.5 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.7 }}
         className="mt-20 text-center bg-gradient-to-r from-sky-500 to-green-500 text-white p-8 md:p-12 rounded-2xl shadow-2xl"
       >
         <h2 className="text-3xl md:text-4xl font-bold mb-4">هل أنت جاهز للترقية إلى مياه أنقى؟</h2>
