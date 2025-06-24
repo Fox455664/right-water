@@ -1,14 +1,14 @@
-// src/components/Navbar.jsx
+// src/components/Navbar.jsx (النسخة النهائية المعدلة)
 
 import React, { useState, useEffect } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, User, LogIn, LogOut, ShieldCheck, Droplets, BookOpen, Package } from 'lucide-react';
+import { ShoppingCart, User, LogIn, LogOut, ShieldCheck, Droplets, BookOpen, Package, Menu, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
-// 🔥🔥 استيراد مكونات القائمة المنسدلة وبيانات المنتجات 🔥🔥
+// استيراد مكونات القائمة المنسدلة وبيانات المنتجات
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -20,8 +20,8 @@ import {
 } from "@/components/ui/navigation-menu";
 import { productCategories } from "@/data/productsData.jsx";
 
-// 🔥🔥 مكون مساعد لعرض عناصر القائمة المنسدلة 🔥🔥
-const ListItem = React.forwardRef(({ className, title, children, to, ...props }, ref) => {
+// مكون مساعد لعرض عناصر القائمة المنسدلة
+const ListItem = React.forwardRef(({ className, title, to, ...props }, ref) => {
   return (
     <li>
       <NavigationMenuLink asChild>
@@ -32,9 +32,6 @@ const ListItem = React.forwardRef(({ className, title, children, to, ...props },
           {...props}
         >
           <div className="text-sm font-medium leading-none">{title}</div>
-          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-            {children}
-          </p>
         </Link>
       </NavigationMenuLink>
     </li>
@@ -46,9 +43,16 @@ ListItem.displayName = "ListItem";
 const Navbar = () => {
   const { currentUser, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   const [cartItemCount, setCartItemCount] = useState(0);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // إغلاق القائمة المنسدلة للموبايل عند تغيير الصفحة
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location]);
 
   useEffect(() => {
     const updateCartCount = () => {
@@ -67,7 +71,6 @@ const Navbar = () => {
       toast({
         title: "تم تسجيل الخروج بنجاح!",
         description: "نأمل رؤيتك مرة أخرى قريباً.",
-        variant: "default",
       });
       navigate('/');
     } catch (error) {
@@ -78,100 +81,129 @@ const Navbar = () => {
       });
     }
   };
+  
+  // تجميع الروابط في متغير لسهولة الاستخدام
+  const navLinks = (
+    <>
+      <Link to="/cart" className="flex items-center gap-4 py-2 text-foreground/80 hover:text-primary">
+          <ShoppingCart size={20} />
+          <span>السلة</span>
+          {cartItemCount > 0 && (
+            <span className="bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+              {cartItemCount > 9 ? '9+' : cartItemCount}
+            </span>
+          )}
+      </Link>
+      {currentUser ? (
+        <>
+          {isAdmin && (
+            <Link to="/AdminDashboard" className="flex items-center gap-4 py-2 text-foreground/80 hover:text-primary">
+              <ShieldCheck size={20} />
+              <span>لوحة التحكم</span>
+            </Link>
+          )}
+          <Link to="/profile" className="flex items-center gap-4 py-2 text-foreground/80 hover:text-primary">
+            <User size={20} />
+            <span>ملفي الشخصي</span>
+          </Link>
+          <button onClick={handleSignOut} className="flex items-center gap-4 py-2 text-foreground/80 hover:text-destructive w-full text-right">
+            <LogOut size={20} />
+            <span>تسجيل الخروج</span>
+          </button>
+        </>
+      ) : (
+        <Link to="/login" className="flex items-center gap-4 py-2 text-foreground/80 hover:text-primary">
+          <LogIn size={20} />
+          <span>تسجيل الدخول</span>
+        </Link>
+      )}
+    </>
+  );
+
 
   return (
     <motion.nav
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className="bg-gradient-to-r from-water-blue to-water-green/80 shadow-lg sticky top-0 z-50 py-3 px-4 md:px-8"
+      className="bg-background/80 backdrop-blur-sm shadow-md sticky top-0 z-50"
     >
-      <div className="container mx-auto flex items-center justify-between">
-        <Link to="/" className="flex items-center space-x-2 text-white hover:opacity-90 transition-opacity" aria-label="الصفحة الرئيسية">
-          <Droplets size={36} className="text-white" />
+      <div className="container mx-auto flex items-center justify-between h-16 px-4">
+        {/* Logo */}
+        <Link to="/" className="flex items-center space-x-2 text-primary hover:opacity-90 transition-opacity" aria-label="الصفحة الرئيسية">
+          <Droplets size={32} />
           <h1 className="text-2xl font-bold tracking-tight">رايت واتر</h1>
         </Link>
+        
+        {/* Desktop Navigation */}
+        <div className="hidden lg:flex items-center space-x-2">
+            <NavigationMenu>
+                <NavigationMenuList>
+                    {/* --- القائمة المنسدلة للمنتجات --- */}
+                    <NavigationMenuItem>
+                        <NavigationMenuTrigger>
+                            <Package className="h-4 w-4 mr-2"/>
+                            المنتجات
+                        </NavigationMenuTrigger>
+                        <NavigationMenuContent>
+                        <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
+                            {productCategories.map((category) => (
+                                <ListItem
+                                    key={category.id}
+                                    title={category.title}
+                                    to={`/products#${category.id}`}
+                                >
+                                </ListItem>
+                            ))}
+                        </ul>
+                        </NavigationMenuContent>
+                    </NavigationMenuItem>
+                    {/* --- زر المقالات --- */}
+                    <NavigationMenuItem>
+                        <NavLink to="/articles" className={navigationMenuTriggerStyle()}>
+                            <BookOpen className="h-4 w-4 mr-2" />
+                            مقالات
+                        </NavLink>
+                    </NavigationMenuItem>
+                </NavigationMenuList>
+            </NavigationMenu>
+            <div className="flex items-center space-x-1">
+                {navLinks}
+            </div>
+        </div>
 
-        {/* 🔥🔥 تم تعديل هذا الجزء بالكامل 🔥🔥 */}
-        <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4">
-          <NavigationMenu>
-            <NavigationMenuList>
-              {/* --- القائمة المنسدلة للمنتجات --- */}
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="text-white bg-transparent hover:bg-white/20 focus:bg-white/20 data-[state=open]:bg-white/20">
-                    <Package className="h-4 w-4 md:mr-2"/>
-                    <span className="hidden md:inline">المنتجات</span>
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
-                    {productCategories.map((category) => (
-                      <ListItem
-                        key={category.id}
-                        title={category.title}
-                        to={`/products/${category.id}`} // رابط ديناميكي لكل فئة
-                      >
-                        تصفح جميع منتجات فئة {category.title}.
-                      </ListItem>
-                    ))}
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-
-              {/* --- زر المقالات --- */}
-              <NavigationMenuItem>
-                  <NavLink to="/articles" className={`${navigationMenuTriggerStyle()} text-white bg-transparent hover:bg-white/20 focus:bg-white/20`}>
-                      <BookOpen className="h-4 w-4 md:mr-2" />
-                      <span className="hidden md:inline">مقالات</span>
-                  </NavLink>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
-
-          {/* --- أيقونات السلة والمستخدم --- */}
-          <Link to="/cart">
-            <Button aria-label="السلة" variant="ghost" className="text-white hover:bg-white/20 relative px-2 sm:px-3">
-              <ShoppingCart size={20} />
-              <span className="ml-1 hidden md:inline">السلة</span>
-              {cartItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full min-h-4 min-w-4 px-[4px] flex items-center justify-center">
-                  {cartItemCount > 99 ? '99+' : cartItemCount}
-                </span>
-              )}
-            </Button>
-          </Link>
-
-          {currentUser ? (
-            <>
-              {isAdmin && (
-                <Link to="/AdminDashboard">
-                  <Button aria-label="لوحة التحكم" variant="ghost" className="text-white hover:bg-white/20 px-2 sm:px-3">
-                    <ShieldCheck size={20} />
-                    <span className="ml-1 hidden md:inline">التحكم</span>
-                  </Button>
-                </Link>
-              )}
-
-              <Link to="/profile">
-                <Button aria-label="الملف الشخصي" variant="ghost" className="text-white hover:bg-white/20 px-2 sm:px-3">
-                  <User size={20} />
-                  <span className="ml-1 hidden md:inline">ملفي</span>
-                </Button>
-              </Link>
-              <Button aria-label="تسجيل الخروج" variant="ghost" onClick={handleSignOut} className="text-white hover:bg-white/20 px-2 sm:px-3">
-                <LogOut size={20} />
-                <span className="ml-1 hidden md:inline">خروج</span>
-              </Button>
-            </>
-          ) : (
-            <Link to="/login">
-              <Button aria-label="تسجيل الدخول" variant="outline" className="text-white border-white hover:bg-white hover:text-primary px-2 sm:px-3">
-                <LogIn size={20} />
-                <span className="ml-1">دخول</span>
-              </Button>
-            </Link>
-          )}
+        {/* Mobile Menu Button */}
+        <div className="lg:hidden">
+          <Button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} variant="ghost" size="icon">
+            {isMobileMenuOpen ? <X /> : <Menu />}
+          </Button>
         </div>
       </div>
+      
+      {/* Mobile Menu */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="lg:hidden overflow-hidden"
+          >
+            <div className="flex flex-col px-4 pt-2 pb-4 border-t">
+              <Link to="/products" className="flex items-center gap-4 py-2 text-foreground/80 hover:text-primary">
+                <Package size={20} />
+                <span>جميع المنتجات</span>
+              </Link>
+              <Link to="/articles" className="flex items-center gap-4 py-2 text-foreground/80 hover:text-primary">
+                <BookOpen size={20} />
+                <span>مقالات</span>
+              </Link>
+              <div className="border-t my-2"></div>
+              {navLinks}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.nav>
   );
 };
