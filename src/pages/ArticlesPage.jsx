@@ -34,7 +34,7 @@ const articles = [
   {
     icon: <Layers3 className="h-10 w-10 text-secondary" />,
     title: "فك شفرة فلاتر المياه: من 3 مراحل إلى 7 مراحل (RO)",
-    image: "/assets/article-filter-stages.jpg", // <--- المسار الجديد
+    image: "/assets/png5.jpg", // <--- المسار الجديد
     content: (
       <div className="space-y-4 text-right">
         <p className="mb-4">عالم فلاتر المياه قد يبدو معقدًا، لكننا هنا لتبسيطه لك. كل مرحلة في الفلتر لها دور حاسم في رحلة تحويل مياه الصنبور العادية إلى مياه شرب صحية ونقية:</p>
@@ -79,7 +79,7 @@ const articles = [
   {
     icon: <ShoppingCart className="h-10 w-10 text-green-500" />,
     title: "لا تنتظر أكثر! اتخذ قرار الصحة اليوم",
-    image: "/assets/article-call-to-action.jpg", // <--- المسار الجديد
+    image: "/assets/png4.jpg", // <--- المسار الجديد
     content: (
       <>
         <p className="mb-4">كل يوم يمر دون وجود فلتر مياه نقي في منزلك هو يوم آخر تتعرض فيه أنت وعائلتك لمخاطر غير ضرورية. الأمر ليس مجرد شراء منتج، بل هو قرار واعٍ لحماية أغلى ما تملك: صحتكم. تصفح مجموعتنا الآن، قارن بين الموديلات، وإذا كان لديك أي سؤال، فريقنا جاهز لمساعدتك في اختيار الفلتر المثالي لمنزلك.</p>
