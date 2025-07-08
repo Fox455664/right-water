@@ -1,4 +1,4 @@
-// src/pages/ArticlesPage.jsx (النسخة النهائية بالحل)
+// src/pages/ArticlesPage.jsx (النسخة النهائية مع مسارات الصور المحلية)
 
 import React from 'react';
 import { motion } from 'framer-motion';
@@ -7,12 +7,12 @@ import { Droplets, ShieldOff, HeartPulse, Sparkles, ShoppingCart, Layers3 } from
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-// ✅ أضفت المقالة السادسة هنا عشان تكون مطابقة لطلبك
+// ✅ تم تعديل مسارات الصور لتقرأ من مجلد "assets" المحلي
 const articles = [
   {
     icon: <HeartPulse className="h-10 w-10 text-primary" />,
     title: "جسمك يصرخ طلبًا للماء النقي! هل تسمعه؟",
-    image: "https://envs.sh/hEO.jpg",
+    image: "/assets/article-pure-water.jpg", // <--- المسار الجديد
     content: (
       <>
         <p className="mb-4">كل خلية، كل نسيج، وكل عضو في جسمك يعتمد بشكل أساسي على الماء ليعمل بكفاءة. لكن هل أي ماء يفي بالغرض؟ بالطبع لا! الماء النقي الخالي من الشوائب ليس مجرد سائل، بل هو وقود الحياة الذي يمنحك الطاقة، يحسن من تركيزك، يطرد السموم، ويمنح بشرتك نضارة لا مثيل لها. تجاهل هذه الحقيقة يعني حرمان جسمك من أهم عنصر يحتاجه للبقاء بصحة ممتازة.</p>
@@ -23,7 +23,7 @@ const articles = [
   {
     icon: <ShieldOff className="h-10 w-10 text-red-500" />,
     title: "العدو الخفي: ما لا تراه في المياه الملوثة",
-    image: "https://envs.sh/hEM.jpg",
+    image: "/assets/article-polluted-water.jpg", // <--- المسار الجديد
     content: (
         <>
             <p className="mb-4">قد تبدو مياه الصنبور صافية، لكن تحت السطح قد يكمن عالم من الملوثات غير المرئية: الكلور الذي يسبب الجفاف والتهيج، الصدأ من الأنابيب القديمة، الرصاص الذي يؤثر على الجهاز العصبي، بالإضافة إلى البكتيريا والفيروسات التي لا تراها بالعين المجردة. هذه الملوثات تتراكم في جسمك يومًا بعد يوم، مسببة مشاكل صحية قد لا تظهر إلا بعد فوات الأوان. هل أنت مستعد للمخاطرة بصحة عائلتك؟</p>
@@ -34,7 +34,7 @@ const articles = [
   {
     icon: <Layers3 className="h-10 w-10 text-secondary" />,
     title: "فك شفرة فلاتر المياه: من 3 مراحل إلى 7 مراحل (RO)",
-    image: "https://images.unsplash.com/photo-1623990088169-3eafccdec2c0?w=500&auto=format&fit=crop&q=60",
+    image: "/assets/article-filter-stages.jpg", // <--- المسار الجديد
     content: (
       <div className="space-y-4 text-right">
         <p className="mb-4">عالم فلاتر المياه قد يبدو معقدًا، لكننا هنا لتبسيطه لك. كل مرحلة في الفلتر لها دور حاسم في رحلة تحويل مياه الصنبور العادية إلى مياه شرب صحية ونقية:</p>
@@ -68,7 +68,7 @@ const articles = [
   {
     icon: <Sparkles className="h-10 w-10 text-yellow-500" />,
     title: "لماذا رايت ووتر؟ لأننا لا نساوم على صحتك",
-    image: "https://envs.sh/hEm.jpg",
+    image: "/assets/article-why-us.jpg", // <--- المسار الجديد
     content: (
       <>
         <p className="mb-4">في سوق مليء بالخيارات، تبرز "رايت ووتر" لأننا نضع صحتك أولاً. نحن لا نبيع مجرد أجهزة، بل نقدم وعدًا بالجودة والنقاء. فلاترنا تستخدم مكونات عالية الجودة ومعتمدة لضمان أداء يدوم طويلاً، وفريقنا الفني مدرب لتقديم خدمة تركيب وصيانة لا تشوبها شائبة. اختيارك لنا يعني اختيار راحة البال والثقة في كل قطرة ماء.</p>
@@ -79,7 +79,7 @@ const articles = [
   {
     icon: <ShoppingCart className="h-10 w-10 text-green-500" />,
     title: "لا تنتظر أكثر! اتخذ قرار الصحة اليوم",
-    image: "https://envs.sh/hQE.jpg",
+    image: "/assets/article-call-to-action.jpg", // <--- المسار الجديد
     content: (
       <>
         <p className="mb-4">كل يوم يمر دون وجود فلتر مياه نقي في منزلك هو يوم آخر تتعرض فيه أنت وعائلتك لمخاطر غير ضرورية. الأمر ليس مجرد شراء منتج، بل هو قرار واعٍ لحماية أغلى ما تملك: صحتكم. تصفح مجموعتنا الآن، قارن بين الموديلات، وإذا كان لديك أي سؤال، فريقنا جاهز لمساعدتك في اختيار الفلتر المثالي لمنزلك.</p>
@@ -90,7 +90,7 @@ const articles = [
   {
     icon: <Droplets className="h-10 w-10 text-blue-400" />,
     title: "دليل صيانة الفلتر: حافظ على نقاء مياهك",
-    image: "https://images.unsplash.com/photo-1583592323232-9a36d2c4b8b8?w=500&auto=format&fit=crop&q=60",
+    image: "/assets/article-maintenance.jpg", // <--- المسار الجديد
     content: (
       <>
         <p className="mb-4">تركيب الفلتر هو الخطوة الأولى، لكن الصيانة الدورية هي مفتاح ضمان استمرارية نقاء المياه. تغيير الشمعات بانتظام ليس رفاهية بل ضرورة للحفاظ على كفاءة الفلتر ومنع تراكم الملوثات. اتبع جدول الصيانة الموصى به لتضمن أن كل كوب ماء تشربه هو الأفضل دائمًا.</p>
@@ -107,7 +107,6 @@ const ArticleCard = ({ article, index }) => (
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.2 }}
         transition={{ duration: 0.5, delay: index * 0.1 }}
-        // ✅ هذا الكلاس يجعل المقال الأخير يمتد ليملأ السطر كاملاً إذا كان وحيداً
         className="lg:[&:last-child:nth-child(odd)]:col-span-2"
     >
         <Card className="flex flex-col h-full glassmorphism-card hover:shadow-2xl transition-shadow duration-300 w-full overflow-hidden">
@@ -151,13 +150,11 @@ const ArticlesPage = () => {
         </p>
       </motion.section>
 
-      {/* 🔴🔴🔴 بداية التعديل هنا 🔴🔴🔴 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
         {articles.map((article, index) => (
           <ArticleCard key={index} article={article} index={index} />
         ))}
       </div>
-      {/* 🔴🔴🔴 نهاية التعديل هنا 🔴🔴🔴 */}
 
        <motion.section
         initial={{ opacity: 0, y: 30 }}
